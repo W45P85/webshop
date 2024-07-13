@@ -325,6 +325,7 @@ def admin_dashboard(request):
 
 @login_required
 def customer_dashboard(request):
+    articles = Article.objects.all()
     customer = Customer.objects.get(user=request.user)
     # Nur Bestellungen mit order_id abrufen
     orders = Order.objects.filter(customer=customer).exclude(order_id=None)
@@ -343,6 +344,7 @@ def customer_dashboard(request):
         order_status.append((order, status))
 
     ctx = {
+        'articles': articles,
         'customer': customer,
         'orders': orders,
         'total_spent': total_spent,
