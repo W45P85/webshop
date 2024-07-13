@@ -1,0 +1,17 @@
+{% extends "shop/index.html" %}
+
+{% block content %}
+    <div class="col-12 mb-4">
+        <div class="shadow p-3">
+            <div class="d-flex flex-wrap">
+                <h3 class="me-auto fw-bold p-2">Artikel löschen</h3>
+            </div>
+            <p>Möchten Sie den Artikel "{{ article.name }}" wirklich löschen?</p>
+            <form method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-danger">Ja, löschen</button>
+                <a href="{% url 'add_article' %}" class="btn btn-secondary">Abbrechen</a>
+            </form>
+        </div>
+    </div>
+{% endblock content %}

@@ -1,0 +1,84 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block content %}
+{% if articles %}
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12 mb-4">
+                <div class="shadow p-3">
+                    <div class="d-flex flex-wrap">
+                        <h3 class="me-auto fw-bold p-2">Warenkorb</h3>
+                        <p class="fw-bold p-2">Gesamtpreis: {{order.get_cart_total|floatformat:2}} €</p>
+                        <p><a class="btn btn-danger p-2" href="{% url 'kasse' %}">Kasse</a></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 mb-4">
+                <div class="shadow p-3">
+                    <!-- Kartenansicht für kleine Bildschirme -->
+                    <div class="d-block d-lg-none">
+                        <div class="row">
+                            {% for article in articles %}
+                            <div class="col-md-6 mb-4">
+                                <div class="card h-100">
+                                    <img src="{{article.article.img.url}}" class="card-img-top img-fluid" alt="{{ article.article.name }}">
+                                    <div class="card-body">
+                                        <h5 class="card-title"><a href="{% url 'article_detail' id=article.article.id %}">{{ article.article.name }}</a></h5>
+                                        <p class="card-text">Menge: {{article.quantity}}</p>
+                                        <p class="card-text">Preis: {{article.article.price|floatformat:2}} €</p>
+                                        <p class="card-text">Summe: {{article.get_total|floatformat:2}} €</p>
+                                    </div>
+                                    <div class="card-footer">
+                                        <button data-artikel="{{article.article.id}}" data-action="entfernen" class="btn btn-outline-danger warenkorb-bestellen">Löschen</button>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Tabellenansicht für große Bildschirme -->
+                    <div class="d-none d-lg-block">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-hover">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Nr.</th>
+                                        <th scope="col">Bild</th>
+                                        <th scope="col">Artikel</th>
+                                        <th scope="col">Menge</th>
+                                        <th scope="col">Preis</th>
+                                        <th scope="col">Summe</th>
+                                        <th scope="col">Aktion</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for article in articles %}
+                                    <tr>
+                                        <th scope="row">{{forloop.counter}}</th>
+                                        <td><img src="{{article.article.img.url}}" class="img-fluid" width="50" height="50"></td>
+                                        <td><a href="{% url 'article_detail' id=article.article.id %}">{{ article.article.name }}</a></td>
+                                        <td>{{article.quantity}}</td>
+                                        <td>{{article.article.price|floatformat:2}} €</td>
+                                        <td>{{article.get_total|floatformat:2}} €</td>
+                                        <td>
+                                            <button data-artikel="{{article.article.id}}" data-action="entfernen" class="btn btn-outline-danger warenkorb-bestellen d-none d-lg-inline">-</button>
+                                            <button data-artikel="{{article.article.id}}" data-action="entfernen" class="btn btn-outline-danger warenkorb-bestellen d-lg-none">Löschen</button>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="container mt-4">
+        <h2>Dein Warenkorb ist leer!</h2>
+    </div>
+{% endif %}
+{% endblock content %}

@@ -1,0 +1,73 @@
+{% extends "shop/index.html" %}
+
+{% block content %}
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="shadow p-4">
+                    <h3>Bestellübersicht</h3>
+                    <hr>
+                    {% for article in articles %}
+                    <div class="d-flex">
+                        <p class="p-2">{{ article.quantity }}</p>
+                        <p class="me-auto p-2"><a href="{% url 'article_detail' id=article.article.id %}">{{ article.article.name }}</a></p>
+                        <p class="p-2">{{ article.get_total|floatformat:2 }} €</p>
+                    </div>
+                    {% endfor %}
+                    <hr>
+                    <div class="d-flex">
+                        <p class="me-auto fw-bold p-2">Menge: {{order.get_cart_items}}</p>
+                        <p class="fw-bold p-2">Gesamtpreis: {{order.get_cart_total|floatformat:2}} €</p>
+                        <input type="text" class="d-none" id="cart_total" value="{{order.get_cart_total|floatformat:2}}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8 col-md-6 mb-4">
+                <div class="shadow p-4">
+                    <form id="formular" class="row g-3">
+                        <div class="col-md-6">
+                            <label for="inputName" class="form-label">Name</label>
+                            {% if request.user.is_authenticated %}
+                            <input type="text" class="form-control" id="inputName" value="{{request.user|title}}" required>
+                            {% else %}
+                            <input type="text" class="form-control" id="inputName" required>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="inputEmail" class="form-label">Email</label>
+                            {% if request.user.is_authenticated %}
+                            <input type="email" class="form-control" id="inputEmail" value="{{request.user.email}}" required>
+                            {% else %}
+                            <input type="email" class="form-control" id="inputEmail" required>
+                            {% endif %}
+                        </div>
+                        <div class="col-12">
+                            <label for="inputAdress" class="form-label">Adresse</label>
+                            <input type="text" class="form-control" id="inputAdress" required>
+                        </div>
+                        <div class="col-md-2">
+                            <label for="inputPlz" class="form-label">Postleitzahl</label>
+                            <input type="text" class="form-control" id="inputPlz" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="inputStadt" class="form-label">Stadt</label>
+                            <input type="text" class="form-control" id="inputStadt" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="inputLand" class="form-label">Land</label>
+                            <input type="text" class="form-control" id="inputLand" required>
+                        </div>
+                        <div class="col-12 d-flex justify-content-end">
+                            <button type="submit" id="formular-button" class="btn btn-secondary">weiter</button>
+                        </div>
+                    </form>
+                    <div class="d-flex d-none" id="bezahlen-info">
+                        <p class="me-auto fw-bold">Zahlung: Paypal</p>
+                        <button class="btn btn-danger" id="bezahlen-button">Bezahlen</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock content %}

@@ -1,0 +1,53 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="card">
+    <div class="card-body">
+        <form method="get">
+            <div>
+                {{ form.as_p }}
+            </div>
+            <button type="submit" class="btn btn-primary d-inline-block mt-2">Suche</button>
+        </form>
+    </div>
+  </div>
+
+
+{% if not_found %}
+    <p class="mt-2 text-center">Keine Artikel gefunden.</p>
+{% else %}
+    <br>
+    <div class="col-12 mb-4">
+        <div class="shadow p-3">
+            <div class="d-none d-lg-block">
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">Bild</th>
+                                <th scope="col">Artikel</th>
+                                <th scope="col">Preis</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for article in results %}
+                            <tr>
+                                <td><img src="{{ article.img.url }}" class="img-fluid" width="50" height="50"></td>
+                                <td><a href="{% url 'article_detail' id=article.id %}">{{ article.name }} - {{ article.description }}</a></td>
+                                <td>{{ article.price|floatformat:2 }} €</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+{% endif %}
+
+{% if article %}
+    <h2>{{ article.name }}</h2>
+    <p>{{ article.description }}</p>
+{% endif %}
+
+{% endblock content %}

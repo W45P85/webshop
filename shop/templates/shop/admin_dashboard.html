@@ -1,0 +1,184 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block content %}
+{{ article.id }}
+<div class="container mt-5">
+    <div class="row mb-5">
+        <div class="col-md-6 mb-3">
+            <div class="card mb-2 btn btn-outline-warning">
+                <a class="p-2 me-2 text-decoration-none" href="{% url 'add_article' %}">
+                    <div class="card-body">
+                        <p class="card-text text-center" style="font-size: 30px; color: black">Artikel</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card mb-2 btn btn-outline-info">
+                <a class="p-2 me-2 text-decoration-none" href="{% url 'add_category' %}">
+                    <div class="card-body">
+                        <p class="card-text text-center" style="font-size: 30px; color: black">Kategorien</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <h2>Dashboard</h2>
+    <div class="row mb-5">
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title mb-2">Gesamtzahl der Kunden: </h5>
+                    <p class="card-text text-center" style="font-size: 30px;">{{ total_customers }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Gesamtzahl der Bestellungen: </h5>
+                    <p class="card-text text-center" style="font-size: 30px;">{{ total_orders }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Abgeschlossene Bestellungen: </h5>
+                    <p class="card-text text-center" style="font-size: 30px;">{{ completed_orders }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Offene Bestellungen: </h5>
+                    <p class="card-text text-center" style="font-size: 30px;">{{ pending_orders }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-danger mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Gesamtumsatz: </h5>
+                    <p class="card-text text-center" style="font-size: 30px;">{{ total_revenue }} €</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-secondary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Verkaufte Artikel: </h5>
+                    <p class="card-text text-center" style="font-size: 30px;">{{ total_items_sold }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-dark mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Neue Kunden (30 Tage): </h5>
+                    <p class="card-text text-center" style="font-size: 30px;">{{ new_customers }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card bg-light mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Durchschnittlicher Bestellwert: </h5>
+                    <p class="card-text text-center" style="font-size: 30px;">{{ average_order_value }} €</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Top-Kunden nach Umsatz: </h5>
+                    <ul class="list-group">
+                        {% for customer in top_customers %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ customer.name }}
+                                <span class="badge bg-primary rounded-pill">{{ customer.total_spent }} €</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-secondary mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Bestellungen pro Kunde: </h5>
+                    <ul class="list-group">
+                        {% for customer in orders_per_customer %}
+                            <li class="list-group-item d-flex justify-content-between align-items-center">
+                                {{ customer.name }}
+                                <span class="badge bg-primary rounded-pill">{{ customer.order_count }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-body">
+                    <h5 class="card-title">Beliebteste Kategorien: </h5>
+                    <ul class="list-group mb-3">
+                        {% if popular_categories %}
+                            {% for category in popular_categories %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    {{ category.category__name }}
+                                    <span class="badge bg-primary rounded-pill">{{ category.total_sold }}</span>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <li class="list-group-item">Keine beliebten Kategorien gefunden</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <h3>Beliebteste Artikel</h3>
+    <ul class="list-group mb-3">
+        {% for article in articles %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <a href="{% url 'article_detail' id=article.id %}">{{ article.name }}</a>
+                <span class="badge bg-primary rounded-pill">{{ article.total_sold }}</span>
+            </li>
+        {% endfor %}
+    </ul>
+    <br>
+    <h3>Bestellungen pro Tag</h3>
+    <ul class="list-group mb-3">
+        {% for day in orders_per_day %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ day.day }}: {{ day.total }} Bestellungen
+            </li>
+        {% endfor %}
+    </ul>
+    <br>
+    <h3>Bestellungen pro Woche</h3>
+    <ul class="list-group mb-3">
+        {% for week in orders_per_week %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ week.week }}: {{ week.total }} Bestellungen
+            </li>
+        {% endfor %}
+    </ul>
+    <br>
+    <h3>Bestellungen pro Monat</h3>
+    <ul class="list-group mb-3">
+        {% for month in orders_per_month %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ month.month }}: {{ month.total }} Bestellungen
+            </li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% endblock content %}

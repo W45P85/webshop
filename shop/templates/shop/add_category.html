@@ -1,0 +1,64 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block content %}
+    <div class="container mt-4">
+        <div class="col-12 mb-4">
+            <div class="shadow p-3">
+                <div class="d-flex flex-wrap">
+                    <h3 class="me-auto fw-bold p-2">Kategorien verwalten</h3>
+                </div>
+            </div>
+        </div>
+        <div class="shadow p-3">
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h4 class="card-title">Kategorie anlegen</h4>
+                                <p>Geben Sie mehrere Kategorien mit Kommas getrennt ein.</p>
+                                <form method="post" enctype="multipart/form-data">
+                                    {% csrf_token %}
+                                    {{ form.categories }}
+                                    <br>
+                                    <button type="submit" name="add_category" class="btn btn-primary">Hinzufügen</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card mb-4">
+                            <div class="card-body">
+                                <h4 class="card-title">Kategorie löschen</h4>
+                                <p>Bitte wählen Sie die Kategorie aus, die Sie löschen möchten.</p>
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <select multiple class="form-control form-control" id="categories_to_delete" name="categories_to_delete">
+                                            {% for category in categories %}
+                                                <option value="{{ category.id }}">{{ category.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <button type="submit" name="delete_category" class="btn btn-danger">Löschen</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {% if messages %}
+                    <div class="mt-4">
+                        <ul class="list-group">
+                            {% for message in messages %}
+                                <li class="list-group-item{% if message.tags %} {{ message.tags }}{% endif %}">{{ message }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% load static %}
+<nav class="navbar navbar-expand-lg shadow sticky-top p-3 mb-4" style="background-color: #0066cc;">
+    <div class="container-fluid">
+        <a class="navbar-brand link-light" href="{% url 'shop' %}">
+            <img src="{% static 'img/danshop.png' %}" alt="DanShop Logo" class="logo">
+        </a>
+        
+        <div class="navbar-collapse justify-content-center">
+            {% if request.user.is_authenticated %}
+                <h5 class="text-light" style="font-size: 35px">Willkommen {{ request.user|title }}</h5>
+            {% endif %}
+        </div>
+        <div class="navbar-nav ms-auto d-flex align-items-center">
+            <a class="nav-link link-light p-2" href="{% url 'warenkorb' %}" title="Warenkorb">
+                <i class="fas fa-shopping-cart fa-lg"></i>
+                {% if quantity >= 1 %}
+                    <span class="badge rounded-pill bg-danger position-absolute top-25 start-25 translate-middle badge-count">{{ quantity }}</span>
+                {% endif %}
+            </a>
+            <a class="nav-link link-light p-2" href="{% url 'search' %}" title="Suche">
+                <i class="fas fa-search fa-lg"></i>
+            </a>
+            
+            {% if request.user.is_authenticated %}
+            <div class="dropdown ms-3">
+                <a class="nav-link dropdown-toggle no-caret d-flex align-items-center" href="#" role="button" id="dropdownMenuLink" data-bs-toggle="dropdown" aria-expanded="false">
+                    <img src="{% if customer.profile_picture %}{{ customer.profile_picture.url }}{% else %}{% static 'img/profile_pics/none.png' %}{% endif %}" class="rounded-circle me-2" width="40" height="40" alt="Profilbild">
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink">
+                    {% if request.user.is_superuser %}
+                        <li><a class="dropdown-item" href="{% url 'admin_dashboard' %}">Admin Dashboard</a></li>
+                    {% else %}
+                        <li><a class="dropdown-item" href="{% url 'customer_dashboard' %}">Kunden Dashboard</a></li>
+                    {% endif %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
+                </ul>
+            </div>
+            {% else %}
+                <a class="btn btn-light p-2 ms-3" href="{% url 'login' %}">Login</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>

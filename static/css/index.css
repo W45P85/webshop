@@ -1,0 +1,74 @@
+.logo {
+    max-height: 500px;
+    /* Weitere Stile nach Bedarf */
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    z-index: 1;
+}
+
+.card img {
+    height: 200px;
+    object-fit: cover;
+}
+
+.card-body {
+    flex: 1;
+}
+
+.card-title, .card-text {
+    margin: 0;
+}
+
+.row-cols-4 > * {
+    display: flex;
+    flex-direction: column;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+}
+
+.link_shop {
+    text-decoration: none;
+    color: black;
+}
+
+.star-rating {
+    font-size: 1.5em;
+    color: #ffd700;
+}
+
+/* Entfernt den Dropdown-Pfeil im Profil-Dropdown */
+.dropdown-toggle::after {
+    display: none;
+}
+
+/* Optional: Zentriert den Text */
+.dropdown-toggle.no-caret {
+    padding-right: 0 !important;
+}
+
+/* Add media queries for responsiveness */
+@media (max-width: 1200px) {
+    .row-cols-4 > * {
+        flex-basis: 25%; /* Adjust column basis for medium screens */
+    }
+}
+
+@media (max-width: 992px) {
+    .row-cols-4 > * {
+        flex-basis: 50%; /* Adjust column basis for smaller screens */
+    }
+}
+
+@media (max-width: 768px) {
+    .row-cols-4 > * {
+        flex-basis: 100%; /* Adjust column basis for mobile screens */
+    }
+}

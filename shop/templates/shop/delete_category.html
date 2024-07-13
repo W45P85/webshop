@@ -1,0 +1,25 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block content %}
+    <h2>Kategorien löschen</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="categories" class="form-label">Kategorien</label>
+            <select multiple class="form-control" id="categories" name="categories">
+                {% for category in categories %}
+                    <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-danger">Löschen</button>
+    </form>
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}
