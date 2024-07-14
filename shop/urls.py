@@ -25,6 +25,7 @@ urlpatterns = [
     path("login/", views.loginSeite, name="login"),
     path("logout/", views.logoutUser, name="logout"),
     path("register/", views.regUser, name="register"),
+    path("profile/update/", views.update_profile, name='profile_update'),
     
     # Order
     path("bestellen/", views.bestellen, name="bestellen"),

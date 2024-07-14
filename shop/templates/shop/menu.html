@@ -11,14 +11,14 @@
             {% endif %}
         </div>
         <div class="navbar-nav ms-auto d-flex align-items-center">
-            <a class="nav-link link-light p-2" href="{% url 'warenkorb' %}" title="Warenkorb">
-                <i class="fas fa-shopping-cart fa-lg"></i>
+            <a class="nav-link link-light p-3" href="{% url 'warenkorb' %}" title="Warenkorb">
+                <i class="fas fa-shopping-cart fa-2x"></i>
                 {% if quantity >= 1 %}
                     <span class="badge rounded-pill bg-danger position-absolute top-25 start-25 translate-middle badge-count">{{ quantity }}</span>
                 {% endif %}
             </a>
             <a class="nav-link link-light p-2" href="{% url 'search' %}" title="Suche">
-                <i class="fas fa-search fa-lg"></i>
+                <i class="fas fa-search fa-2x"></i>
             </a>
             
             {% if request.user.is_authenticated %}
@@ -33,6 +33,9 @@
                         <li><a class="dropdown-item" href="{% url 'customer_dashboard' %}">Kunden Dashboard</a></li>
                     {% endif %}
                     <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item" href="{% url 'profile_update' %}">Profil anpassen</a>
+                    </li>
                     <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
                 </ul>
             </div>

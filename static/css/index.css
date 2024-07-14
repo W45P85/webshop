@@ -54,6 +54,57 @@
     padding-right: 0 !important;
 }
 
+
+
+/* ========== LOGIN, REGISTRATION ========== */
+.login-body {
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.login-card {
+    max-width: 400px;
+    padding: 20px;
+    margin: auto;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    background-color: #fff;
+}
+.login-card-header {
+    background-color: #007bff;
+    color: #fff;
+    text-align: center;
+    padding: 10px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+.login-card-body {
+    padding: 20px;
+}
+.login-form-label {
+    font-weight: bold;
+}
+.login-form-control {
+    border-color: #ccc;
+}
+.login-btn {
+    width: 100%;
+    margin-top: 10px;
+}
+.login-link {
+    text-align: center;
+    margin-top: 15px;
+}
+.login-link a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+
+
+
+
+
 /* Add media queries for responsiveness */
 @media (max-width: 1200px) {
     .row-cols-4 > * {

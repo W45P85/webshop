@@ -6,12 +6,13 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from datetime import timedelta
-from . forms import CustomerCreationForm, CustomerProfileForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm
+from . forms import CustomerCreationForm, CustomerProfileForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, CustomerProfileUpdateForm
 from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
@@ -123,6 +124,7 @@ def logoutUser(request):
     logout(request)
     return redirect('shop')
 
+
 def regUser(request):
     page = 'reg'
     user_form = CustomerCreationForm()
@@ -153,6 +155,31 @@ def regUser(request):
 
     ctx = {'user_form': user_form, 'profile_form': profile_form, 'page': page}
     return render(request, 'shop/registration_form.html', ctx)
+
+
+def update_profile(request):
+    if request.method == 'POST':
+        user_form = CustomerCreationForm(request.POST, instance=request.user)
+        profile_form = CustomerProfileUpdateForm(request.POST, request.FILES, instance=request.user.customer)
+        password_form = PasswordChangeForm(request.user, request.POST)
+
+        if user_form.is_valid() and profile_form.is_valid() and password_form.is_valid():
+            user_form.save()
+            profile_form.save()
+            user = password_form.save()
+            messages.success(request, 'Ihr Profil wurde erfolgreich aktualisiert.')
+            return redirect('profile_update')
+    else:
+        user_form = CustomerCreationForm(instance=request.user)
+        profile_form = CustomerProfileUpdateForm(instance=request.user.customer)
+        password_form = PasswordChangeForm(request.user)
+
+    return render(request, 'shop/profile_update.html', {
+        'user_form': user_form,
+        'profile_form': profile_form,
+        'password_form': password_form
+    })
+
 
 def check_and_fix_customers():
     customers = Customer.objects.all()
@@ -325,35 +352,47 @@ def admin_dashboard(request):
 
 @login_required
 def customer_dashboard(request):
-    articles = Article.objects.all()
-    customer = Customer.objects.get(user=request.user)
-    # Nur Bestellungen mit order_id abrufen
-    orders = Order.objects.filter(customer=customer).exclude(order_id=None)
+    try:
+        customer = Customer.objects.get(user=request.user)
+    except Customer.DoesNotExist:
+        customer = None
 
-    total_spent = round(orders.aggregate(Sum('orderdarticle__article__price'))['orderdarticle__article__price__sum'], 2)
-    total_orders = orders.count()
-    popular_articles = OrderdArticle.objects.filter(order__customer=customer).values('article__name', 'article_id').annotate(total_bought=Sum('quantity')).order_by('-total_bought')[:5]
-    
-    # Bestellhistorie (sortiert nach Datum)
-    orders = Order.objects.filter(customer=customer, done=True).order_by('-order_date')
+    if customer:
+        # Filterung der Bestellungen des Kunden
+        articles = Article.objects.all()
+        orders = Order.objects.filter(customer=customer)
+        
+        # Überprüfen, ob der Kunde Bestellungen hat
+        if orders.exists():
+            # Berechnung der gesamten Ausgaben des Kunden
+            total_spent = orders.aggregate(Sum('orderdarticle__article__price'))['orderdarticle__article__price__sum'] or 0.00
+            total_spent = round(total_spent, 2)
+            
+            # Anzeige der beliebtesten Artikel
+            total_orders = orders.count()
+            popular_articles = OrderdArticle.objects.filter(order__customer=customer).values('article__name', 'article_id').annotate(total_bought=Sum('quantity')).order_by('-total_bought')[:5]
 
-    # Bestellstatus hinzufügen
-    order_status = []
-    for order in orders:
-        status = "Abgeschlossen" if order.done else "Offen"
-        order_status.append((order, status))
+            # Bestellhistorie des Kunden
+            orders_history = Order.objects.filter(customer=customer, done=True).order_by('-order_date')
+            order_status = [(order, "Abgeschlossen" if order.done else "Offen") for order in orders_history]
 
-    ctx = {
-        'articles': articles,
-        'customer': customer,
-        'orders': orders,
-        'total_spent': total_spent,
-        'total_orders': total_orders,
-        'popular_articles': popular_articles,
-        'order_status': order_status,
-    }
+            ctx = {
+                'articles': articles,
+                'customer': customer,
+                'orders': orders,
+                'total_spent': total_spent,
+                'total_orders': total_orders,
+                'popular_articles': popular_articles,
+                'order_status': order_status,
+            }
 
-    return render(request, 'shop/customer_dashboard.html', ctx)
+            return render(request, 'shop/customer_dashboard.html', ctx)
+        else:
+            # Handle Fall, wenn der Kunde keine Bestellungen hat
+            return render(request, 'shop/customer_dashboard_empty.html')
+    else:
+        # Handle Fall, wenn der Kunde nicht gefunden wird
+        return render(request, 'shop/customer_not_found.html')
 
 def articleDetail(request, id):
     article = get_object_or_404(Article, id=id)
