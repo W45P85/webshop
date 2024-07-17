@@ -103,6 +103,18 @@
 
             {% endblock content %}
         </div>
+        {% cookie_accepted 'essential' as cookie_essential %}
+            {% if cookie_essential %}
+            <script>
+                console.log("Essential cookies accepted.");
+                // Dein Javascript für essentielle Cookies
+            </script>
+        {% else %}
+            <script>
+                console.log("Essential cookies not accepted.");
+            </script>
+        {% endif %}
+
         {% cookie_accepted 'analytics' as cookie_analytics %}
             {% if cookie_analytics %}
             <script>

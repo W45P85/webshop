@@ -58,6 +58,15 @@
                 <div class="card-body">
                     <h5 class="card-title">Offene Bestellungen: </h5>
                     <p class="card-text text-center" style="font-size: 30px;">{{ pending_orders }}</p>
+                    <ul class="list-group mt-3">
+                        {% for order in open_orders %}
+                            <li class="list-group-item">
+                                <a href="{% url 'admin:shop_order_change' order.id %}">Bestellung {{ order.id }}</a> 
+                                von {{ order.customer.user.username }} 
+                                ({{ order.order_date }})
+                            </li>
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
         </div>
@@ -100,7 +109,7 @@
                     <ul class="list-group">
                         {% for customer in top_customers %}
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                {{ customer.name }}
+                                {{ customer.user.username }}
                                 <span class="badge bg-primary rounded-pill">{{ customer.total_spent }} €</span>
                             </li>
                         {% endfor %}
@@ -115,7 +124,7 @@
                     <ul class="list-group">
                         {% for customer in orders_per_customer %}
                             <li class="list-group-item d-flex justify-content-between align-items-center">
-                                {{ customer.name }}
+                                {{ customer.user.username }}
                                 <span class="badge bg-primary rounded-pill">{{ customer.order_count }}</span>
                             </li>
                         {% endfor %}
@@ -131,7 +140,7 @@
                         {% if popular_categories %}
                             {% for category in popular_categories %}
                                 <li class="list-group-item d-flex justify-content-between align-items-center">
-                                    {{ category.category__name }}
+                                    {{ category.name }}
                                     <span class="badge bg-primary rounded-pill">{{ category.total_sold }}</span>
                                 </li>
                             {% endfor %}
@@ -147,11 +156,26 @@
     <ul class="list-group mb-3">
         {% for article in articles %}
             <li class="list-group-item d-flex justify-content-between align-items-center">
-                <a href="{% url 'article_detail' id=article.id %}">{{ article.name }}</a>
+                <a href="{% url 'article_detail' article.id %}">{{ article.name }}</a>
                 <span class="badge bg-primary rounded-pill">{{ article.total_sold }}</span>
             </li>
         {% endfor %}
     </ul>
+    <br>
+    <h3>Offene Bestellungen im Detail:</h3>
+                    <ul>
+                        {% for order in open_orders %}
+                            <li>
+                                Bestellung ID: {{ order.id }},
+                                {% if order.customer %}
+                                    Kunde: {{ order.customer.user.username }}
+                                {% else %}
+                                    Kunde nicht verfügbar
+                                {% endif %},
+                                Bestelldatum: {{ order.order_date }}
+                            </li>
+                        {% endfor %}
+                    </ul>
     <br>
     <h3>Bestellungen pro Tag</h3>
     <ul class="list-group mb-3">

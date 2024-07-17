@@ -22,7 +22,7 @@
                             {% for article in articles %}
                             <div class="col-md-6 mb-4">
                                 <div class="card h-100">
-                                    <img src="{{article.article.img.url}}" class="card-img-top img-fluid" alt="{{ article.article.name }}">
+                                    <img src="{{article.article.img.url}}" width="50" height="50" alt="{{ article.article.name }}">
                                     <div class="card-body">
                                         <h5 class="card-title"><a href="{% url 'article_detail' id=article.article.id %}">{{ article.article.name }}</a></h5>
                                         <p class="card-text">Menge: {{article.quantity}}</p>
@@ -56,15 +56,21 @@
                                 <tbody>
                                     {% for article in articles %}
                                     <tr>
-                                        <th scope="row">{{forloop.counter}}</th>
-                                        <td><img src="{{article.article.img.url}}" class="img-fluid" width="50" height="50"></td>
+                                        <th scope="row">{{ forloop.counter }}</th>
+                                        {% if request.user.is_authenticated %}
+                                            <!-- Für angemeldete Benutzer -->
+                                            <td><img src="{{ article.article.img.url }}" class="img-fluid" width="50" height="50"></td>
+                                        {% else %}
+                                            <!-- Für nicht angemeldete Benutzer -->
+                                            <td><img src="{{ article.article.img }}" class="img-fluid" width="50" height="50"></td>
+                                        {% endif %}
                                         <td><a href="{% url 'article_detail' id=article.article.id %}">{{ article.article.name }}</a></td>
-                                        <td>{{article.quantity}}</td>
-                                        <td>{{article.article.price|floatformat:2}} €</td>
-                                        <td>{{article.get_total|floatformat:2}} €</td>
+                                        <td>{{ article.quantity }}</td>
+                                        <td>{{ article.article.price|floatformat:2 }} €</td>
+                                        <td>{{ article.get_total|floatformat:2 }} €</td>
                                         <td>
-                                            <button data-artikel="{{article.article.id}}" data-action="entfernen" class="btn btn-outline-danger warenkorb-bestellen d-none d-lg-inline">-</button>
-                                            <button data-artikel="{{article.article.id}}" data-action="entfernen" class="btn btn-outline-danger warenkorb-bestellen d-lg-none">Löschen</button>
+                                            <button data-artikel="{{ article.article.id }}" data-action="entfernen" class="btn btn-outline-danger warenkorb-bestellen d-none d-lg-inline">-</button>
+                                            <button data-artikel="{{ article.article.id }}" data-action="entfernen" class="btn btn-outline-danger warenkorb-bestellen d-lg-none">Löschen</button>
                                         </td>
                                     </tr>
                                     {% endfor %}

@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+from decimal import Decimal
 
 
 class Customer(models.Model):
@@ -7,7 +9,11 @@ class Customer(models.Model):
     profile_picture = models.ImageField(upload_to='profile_pics', default='profile_pics/none.png')
     
     def __str__(self):
-        return self.user.username
+        if self.user:
+            return self.user.username
+        else:
+            return 'Unbekannter Kunde'
+
 
     @property
     def email(self):
@@ -42,21 +48,25 @@ class Order(models.Model):
     
     @property
     def get_cart_total(self):
-        orderd_articles = self.orderdarticle_set.all()
-        cart_total = sum([orderd_article.get_total for orderd_article in orderd_articles])
+        ordered_articles = self.orderdarticle_set.all()
+        cart_total = Decimal('0.00')
+        for ordered_article in ordered_articles:
+            cart_total += ordered_article.get_total
         return cart_total
-    
+
     @property
     def get_cart_items(self):
-        orderd_articles = self.orderdarticle_set.all()
-        cart_items = sum([orderd_article.quantity for orderd_article in orderd_articles])
+        ordered_articles = self.orderdarticle_set.all()
+        cart_items = sum([ordered_article.quantity for ordered_article in ordered_articles])
         return cart_items
+
+
 
 class OrderdArticle(models.Model):
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, blank=True, null=True)
     article = models.ForeignKey(Article, on_delete=models.SET_NULL, blank=True, null=True)
     quantity = models.IntegerField(null=True, blank=True, default=0)
-    order_date = models.DateTimeField(auto_now_add=True)
+    order_date = models.DateTimeField(default=timezone.now)
     # price = models.FloatField(null=True)
 
     def __str__(self):
@@ -66,6 +76,7 @@ class OrderdArticle(models.Model):
     def get_total(self):
         total = self.article.price * self.quantity
         return total
+
 
 class Adress(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, blank=True, null=True)
@@ -81,7 +92,9 @@ class Adress(models.Model):
 
 
 class Category(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=100)
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name

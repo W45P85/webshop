@@ -1,11 +1,12 @@
 import json
 import uuid
 import logging
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.utils.safestring import mark_safe
@@ -17,6 +18,8 @@ from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
 from paypal.standard.forms import PayPalPaymentsForm
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
+from urllib.parse import unquote
 
 
 def shop(request):
@@ -38,29 +41,43 @@ def shop(request):
     return render(request, 'shop/shop.html', ctx)
 
 
-def is_cookie_accepted(request, group_id):
-    cookie_consent = request.COOKIES.get('cookie_consent', '')
-    return group_id in cookie_consent.split(',')
+def is_cookie_accepted(request, cookie_name):
+    cookie_consent = request.COOKIES.get('cookiebanner', '')
+    if not cookie_consent:
+        print("Cookie not accepted")
+        return False
+    
+    # Decode the URL-encoded cookie value
+    decoded_consent = unquote(cookie_consent)
+    accepted_cookies = decoded_consent.split(',')
+    print(f"Accepted cookies: {accepted_cookies}")
+    return cookie_name in accepted_cookies
 
 
 def warenkorb(request):
+    order = None
+    articles = []
+
     if request.user.is_authenticated:
         customer = request.user.customer
         order, created = Order.objects.get_or_create(customer=customer, done=False)
         articles = order.orderdarticle_set.all()
     else:
-        if is_cookie_accepted(request, 'essential'):
-            cookiedata = visitorCookieHandler(request)
-            articles = cookiedata['articles']
-            order = cookiedata['order']
+        essential_accepted = is_cookie_accepted(request, 'essential')
+
+        if essential_accepted:
+            cookieData = visitorCookieHandler(request)
+            articles = cookieData.get('articles', [])
+            order = cookieData.get('order', None)
         else:
             articles = []
-            order = None
+            order = {'get_cart_total': 0, 'get_cart_items': 0}
 
-    ctx = {'articles': articles, 
-           'order': order,
-           'articles': articles,
-        }
+    ctx = {
+        'articles': articles,
+        'order': order,
+    }
+
     return render(request, 'shop/warenkorb.html', ctx)
 
 def kasse(request):
@@ -84,6 +101,7 @@ def kasse(request):
 
 def artikelBackend(request):
     data = json.loads(request.body)
+    print(f"Data received: {data}")
     articleId = data['articleId']
     action = data['action']
     customer = request.user.customer
@@ -121,7 +139,11 @@ def loginSeite(request):
     return render(request, 'shop/login.html', {'page': page})
 
 def logoutUser(request):
-    logout(request)
+    if request.user.is_authenticated:
+        # Löschen der offene Bestellungen des aktuellen Benutzers
+        # Order.objects.filter(customer=request.user.customer, done=False).delete()
+    
+        logout(request)
     return redirect('shop')
 
 
@@ -199,18 +221,24 @@ def bestellen(request):
 
         if request.user.is_authenticated:
             customer = request.user.customer
-            order, created = Order.objects.get_or_create(customer=customer, done=False)
+            order = Order.objects.filter(customer=customer, done=False).first()
+            if order is None:
+                order = Order.objects.create(customer=customer, done=False)
         else:
             customer, order = visitorOrder(request, data)
+            if customer is None or order is None:
+                return HttpResponse('Fehler bei der Bestellung für anonymen Benutzer.')
 
-        # Sicherstellen, dass das Komma durch einen Punkt ersetzt wird
+        # Convert cart_total to float
         cart_total_str = data['customerData']['cart_total'].replace(',', '.')
         cart_total = float(cart_total_str)
 
+        # Mark the order as done and assign the order_id
         order.order_id = order_id
         order.done = True
         order.save()
 
+        # Create delivery address
         Adress.objects.create(
             customer=customer,
             order=order,
@@ -220,10 +248,10 @@ def bestellen(request):
             state=data['deliveryAdress']['country'],
         )
 
+        # PayPal payment setup
         paypal_dict = {
             "business": 'sb-n9yva31537598@business.example.com',
             "amount": format(cart_total, '.2f'),
-            #"item_name": "name of the item",
             "invoice": order_id,
             "currency_code": "EUR",
             "notify_url": request.build_absolute_uri(reverse('paypal-ipn')),
@@ -233,12 +261,21 @@ def bestellen(request):
 
         paypalForm = PayPalPaymentsForm(initial=paypal_dict)
 
+        # Construct success message with order link and PayPal form
         orderURL = str(order_id)
-        messages.success(request, mark_safe("Vielen Dank für ihre <a href='/order/" + orderURL + "'>Bestellung: " + orderURL + "</a><br> Jetzt mit Paypal bezahlen: " + paypalForm.render()))
-        # return JsonResponse("Bestellung erfolgreich", safe=False)
+        messages.success(request, mark_safe(f"Vielen Dank für Ihre <a href='/order/{orderURL}'>Bestellung: {orderURL}</a><br> Jetzt mit PayPal bezahlen: {paypalForm.render()}"))
+
+        # Delete cart cookie to clear current cart
         response = HttpResponse('Bestellung erfolgreich')
         response.delete_cookie('cart')
+
         return response
+
+    except Exception as e:
+        # Handle any exceptions gracefully and log them
+        print(f"Fehler bei der Bestellung: {str(e)}")
+        return HttpResponse('Es ist ein Fehler bei der Bestellung aufgetreten.')
+
     except ValueError as e:
         logging.error(f"ValueError: {e}")
         return HttpResponseBadRequest("Invalid input data")
@@ -255,7 +292,7 @@ def order(request, id):
         messages.error(request, "Bestellung nicht gefunden.")
         return redirect('shop')
 
-    if request.user.is_superuser:
+    if request.user.is_superuser or (order.customer and order.customer.user == request.user):
         articles = order.orderdarticle_set.all()
         ctx = {'articles': articles, 'order': order}
         return render(request, 'shop/order.html', ctx)
@@ -264,7 +301,7 @@ def order(request, id):
         ctx = {'articles': articles, 'order': order}
         return render(request, 'shop/order.html', ctx)
     else:
-        # Füge Debugging-Informationen hinzu
+        # Debugging-Informationen
         if not order.customer:
             messages.error(request, "Bestellung hat keinen zugeordneten Kunden.")
         elif not hasattr(order.customer, 'user'):
@@ -279,73 +316,57 @@ def error404(request, exception):
 
 @login_required(login_url='login')
 def admin_dashboard(request):
-    articles = Article.objects.all()
-    
-    # Gesamtzahl der Kunden
     total_customers = Customer.objects.count()
-
-    # Gesamtzahl der Bestellungen
     total_orders = Order.objects.count()
-
-    # Abgeschlossene und nicht abgeschlossene Bestellungen
     completed_orders = Order.objects.filter(done=True).count()
     pending_orders = Order.objects.filter(done=False).count()
-
-    # Gesamtumsatz
-    total_revenue = Order.objects.filter(done=True).aggregate(Sum('orderdarticle__article__price'))['orderdarticle__article__price__sum']
-    total_revenue = round(total_revenue, 2) if total_revenue else 0
-
-    # Anzahl der verkauften Artikel
-    total_items_sold = OrderdArticle.objects.aggregate(Sum('quantity'))['quantity__sum']
-
-    # Durchschnittlicher Bestellwert
-    total_orders_value = Order.objects.filter(done=True).aggregate(Sum('orderdarticle__article__price'))['orderdarticle__article__price__sum']
-    average_order_value = total_orders_value / completed_orders if completed_orders > 0 else 0
-    average_order_value = round(average_order_value, 2)
-
-    # Top-Kunden nach Umsatz
-    top_customers = Customer.objects.annotate(total_spent=Sum('order__orderdarticle__article__price')).order_by('-total_spent')[:5]
-
-    # Bestellungen pro Kunde
-    orders_per_customer = Customer.objects.annotate(order_count=Count('order')).order_by('-order_count')
-
-    # Beliebteste Kategorien (nach verkauften Artikeln)
-    popular_categories = Article.objects.values('category__name').annotate(total_sold=Sum('orderdarticle__quantity')).order_by('-total_sold')[:5]
-
-    # Neue Kunden (z.B. in den letzten 30 Tagen)
-    last_30_days = timezone.now() - timedelta(days=30)
-    new_customers = Customer.objects.filter(user__date_joined__gte=last_30_days).count()
     
-    # Beliebteste Artikel (nach verkauften Artikeln)
-    popular_articles = OrderdArticle.objects.values('article__name').annotate(total_sold=Sum('quantity')).order_by('-total_sold')[:5]
-    
-    # Bestellungen pro Tag/Woche/Monat
-    from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
-    orders_per_day = Order.objects.annotate(day=TruncDay('order_date')).values('day').annotate(total=Count('id')).order_by('day')
-    orders_per_week = Order.objects.annotate(week=TruncWeek('order_date')).values('week').annotate(total=Count('id')).order_by('week')
-    orders_per_month = Order.objects.annotate(month=TruncMonth('order_date')).values('month').annotate(total=Count('id')).order_by('month')
+    # Alle offenen Bestellungen sortiert nach Bestelldatum in absteigender Reihenfolge abrufen
+    open_orders = Order.objects.filter(done=False).order_by('-order_date')
 
-    # Gesamtzahl der Artikel
-    total_articles = Article.objects.count()
+    # Die letzte Bestellung aus der Liste entfernen
+    if open_orders.exists():
+        open_orders = open_orders.exclude(pk=open_orders.first().pk)
+
+    # Gesamtumsatz berechnen
+    total_revenue = OrderdArticle.objects.aggregate(total_revenue=Sum('article__price'))['total_revenue']
+    if total_revenue is None:
+        total_revenue = 0
+
+    # Gesamtanzahl verkaufter Artikel berechnen
+    total_items_sold = OrderdArticle.objects.aggregate(total_items_sold=Sum('quantity'))['total_items_sold']
+    if total_items_sold is None:
+        total_items_sold = 0
+
+    # Anzahl neuer Kunden in den letzten 30 Tagen berechnen
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    new_customers = Customer.objects.filter(user__date_joined__gte=thirty_days_ago).count()
+
+    top_customers = Customer.objects.annotate(total_spent=Sum('order__orderdarticle__article__price') * Sum('order__orderdarticle__quantity')).order_by('-total_spent')[:5]
+    orders_per_customer = Customer.objects.annotate(order_count=Count('order')).order_by('-order_count')[:5]
+    popular_categories = Category.objects.annotate(total_sold=Sum('article__orderdarticle__quantity')).order_by('-total_sold')[:5]
+
+    articles = Article.objects.annotate(total_sold=Sum('orderdarticle__quantity')).order_by('-total_sold')[:5]
+    orders_per_day = Order.objects.annotate(day=TruncDay('order_date')).values('day').annotate(total=Count('id')).order_by('-day')
+    orders_per_week = Order.objects.annotate(week=TruncWeek('order_date')).values('week').annotate(total=Count('id')).order_by('-week')
+    orders_per_month = Order.objects.annotate(month=TruncMonth('order_date')).values('month').annotate(total=Count('id')).order_by('-month')
 
     ctx = {
-        'articles': articles,
-        'popular_articles': popular_articles,
+        'open_orders': open_orders,
         'total_customers': total_customers,
         'total_orders': total_orders,
         'completed_orders': completed_orders,
         'pending_orders': pending_orders,
         'total_revenue': total_revenue,
         'total_items_sold': total_items_sold,
-        'average_order_value': average_order_value,
+        'new_customers': new_customers,
         'top_customers': top_customers,
         'orders_per_customer': orders_per_customer,
         'popular_categories': popular_categories,
-        'new_customers': new_customers,
+        'articles': articles,
         'orders_per_day': orders_per_day,
         'orders_per_week': orders_per_week,
         'orders_per_month': orders_per_month,
-        'total_articles': total_articles,
     }
 
     return render(request, 'shop/admin_dashboard.html', ctx)
@@ -359,47 +380,42 @@ def customer_dashboard(request):
 
     if customer:
         # Filterung der Bestellungen des Kunden
-        articles = Article.objects.all()
-        orders = Order.objects.filter(customer=customer)
+        orders = Order.objects.filter(customer=customer, done=True).order_by('-order_date')
         
-        # Überprüfen, ob der Kunde Bestellungen hat
-        if orders.exists():
-            # Berechnung der gesamten Ausgaben des Kunden
-            total_spent = orders.aggregate(Sum('orderdarticle__article__price'))['orderdarticle__article__price__sum'] or 0.00
-            total_spent = round(total_spent, 2)
-            
-            # Anzeige der beliebtesten Artikel
-            total_orders = orders.count()
-            popular_articles = OrderdArticle.objects.filter(order__customer=customer).values('article__name', 'article_id').annotate(total_bought=Sum('quantity')).order_by('-total_bought')[:5]
+        # Paginator hinzufügen
+        paginator = Paginator(orders, 10)  # 10 Bestellungen pro Seite
+        page_number = request.GET.get('page')
+        try:
+            page_obj = paginator.page(page_number)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+        
+        # Berechnung der gesamten Ausgaben des Kunden
+        total_spent = orders.aggregate(Sum('orderdarticle__article__price'))['orderdarticle__article__price__sum'] or 0.00
+        total_spent = round(total_spent, 2)
+        
+        # Anzeige der beliebtesten Artikel
+        total_orders = orders.count()
+        popular_articles = OrderdArticle.objects.filter(order__customer=customer).values('article__name', 'article_id').annotate(total_bought=Sum('quantity')).order_by('-total_bought')[:5]
 
-            # Bestellhistorie des Kunden
-            orders_history = Order.objects.filter(customer=customer, done=True).order_by('-order_date')
-            order_status = [(order, "Abgeschlossen" if order.done else "Offen") for order in orders_history]
+        # Bestellhistorie des Kunden (nur die aktuelle Seite)
+        order_status = [(order, "Abgeschlossen" if order.done else "Offen") for order in page_obj]
 
-            ctx = {
-                'articles': articles,
-                'customer': customer,
-                'orders': orders,
-                'total_spent': total_spent,
-                'total_orders': total_orders,
-                'popular_articles': popular_articles,
-                'order_status': order_status,
-            }
+        ctx = {
+            'customer': customer,
+            'total_spent': total_spent,
+            'total_orders': total_orders,
+            'popular_articles': popular_articles,
+            'order_status': order_status,
+            'page_obj': page_obj,  # Übergeben der paginierten Bestellungen an das Template
+        }
 
-            return render(request, 'shop/customer_dashboard.html', ctx)
-        else:
-            # Handle Fall, wenn der Kunde keine Bestellungen hat
-            return render(request, 'shop/customer_dashboard_empty.html')
+        return render(request, 'shop/customer_dashboard.html', ctx)
     else:
         # Handle Fall, wenn der Kunde nicht gefunden wird
         return render(request, 'shop/customer_not_found.html')
-
-def articleDetail(request, id):
-    article = get_object_or_404(Article, id=id)
-    ctx = {
-        'article': article,
-    }
-    return render(request, 'shop/article_detail.html', ctx)
 
 def search_results(request):
     form = SearchForm(request.GET)
@@ -524,15 +540,12 @@ def delete_article_confirmation(request, article_id):
     return render(request, 'shop/delete_article.html', {'article': article})
 
 
-@login_required
-def article_detail(request, article_id):
-    article = get_object_or_404(Article, pk=article_id)
-
-
-    # Render der Template-Datei
-    return render(request, 'shop/article_detail.html', {
+def article_detail(request, id):
+    article = get_object_or_404(Article, id=id)
+    ctx = {
         'article': article,
-    })
+    }
+    return render(request, 'shop/article_detail.html', ctx)
 
 
 def imprint(request):
