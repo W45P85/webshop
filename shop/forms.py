@@ -43,7 +43,7 @@ class CustomerProfileUpdateForm(forms.ModelForm):
         model = Customer
         fields = ['profile_picture']
         widgets = {
-            'profile_picture': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
+            'profile_picture': forms.ClearableFileInput(attrs={'class': 'form-control-file', 'id': 'id_profile_picture'}),
         }
 
 class UserUpdateForm(forms.ModelForm):

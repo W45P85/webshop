@@ -10,6 +10,7 @@ class Customer(models.Model):
     profile_picture = models.ImageField(upload_to='profile_pics', default='profile_pics/none.png')
     
     def __str__(self):
+        print(f"Calling __str__ method of {self.__class__.__name__}")
         if self.user:
             return self.user.username
         else:
@@ -17,15 +18,15 @@ class Customer(models.Model):
 
     @property
     def email(self):
-        return self.user.email
+        return self.user.email if self.user else ''
 
     @property
     def first_name(self):
-        return self.user.first_name
+        return self.user.first_name if self.user else ''
 
     @property
     def last_name(self):
-        return self.user.last_name
+        return self.user.last_name if self.user else ''
 
 class Article(models.Model):
     name = models.CharField(max_length=200, null=True)
@@ -46,7 +47,7 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return str(self.id)
+        return str(self.id) if self.id is not None else ''
     
     @property
     def get_cart_total(self):
@@ -72,7 +73,11 @@ class OrderdArticle(models.Model):
     # price = models.FloatField(null=True)
 
     def __str__(self):
-        return self.article.name
+        print(f"Calling __str__ method of {self.__class__.__name__}")
+        if self.article:
+            return self.article.name
+        else:
+            return 'Unbekannter Artikel'
 
     @property
     def get_total(self):
@@ -81,7 +86,7 @@ class OrderdArticle(models.Model):
 
 
 class Adress(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, blank=True, null=True)
+    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, blank=True, null=True, related_name='addresses')
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, blank=True, null=True)
     address = models.CharField(max_length=200, null=True)
     city = models.CharField(max_length=200, null=True)
@@ -90,7 +95,7 @@ class Adress(models.Model):
     date = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.address
+        return self.address if self.address else 'Unbekannte Adresse'
 
 
 class Category(models.Model):

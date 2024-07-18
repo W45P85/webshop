@@ -5,15 +5,14 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required
 from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from datetime import timedelta
-from . forms import CustomerCreationForm, CustomerProfileForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, CustomerProfileUpdateForm
+from . forms import CustomerCreationForm, CustomerProfileForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, CustomerProfileUpdateForm, UserUpdateForm
 from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
@@ -179,20 +178,34 @@ def regUser(request):
     return render(request, 'shop/registration_form.html', ctx)
 
 
+@login_required
 def update_profile(request):
     if request.method == 'POST':
-        user_form = CustomerCreationForm(request.POST, instance=request.user)
+        user_form = UserUpdateForm(request.POST, instance=request.user)
         profile_form = CustomerProfileUpdateForm(request.POST, request.FILES, instance=request.user.customer)
         password_form = PasswordChangeForm(request.user, request.POST)
 
-        if user_form.is_valid() and profile_form.is_valid() and password_form.is_valid():
-            user_form.save()
-            profile_form.save()
-            user = password_form.save()
+        if user_form.is_valid() and profile_form.is_valid():
+            user = user_form.save()
+            profile = profile_form.save(commit=False)
+            profile.user = user  # Ensure the user field of Customer model is set correctly
+
+            if 'profile_picture' in request.FILES:
+                profile.profile_picture = request.FILES['profile_picture']
+
+            profile.save()
+            update_session_auth_hash(request, user)
             messages.success(request, 'Ihr Profil wurde erfolgreich aktualisiert.')
             return redirect('profile_update')
+        else:
+            # Only show password form errors if it's necessary to change the password
+            if 'password1' in request.POST and 'password2' in request.POST:
+                if not password_form.is_valid():
+                    messages.error(request, 'Bitte korrigieren Sie die Fehler unten.')
+            else:
+                messages.error(request, 'Bitte korrigieren Sie die Fehler unten.')
     else:
-        user_form = CustomerCreationForm(instance=request.user)
+        user_form = UserUpdateForm(instance=request.user)
         profile_form = CustomerProfileUpdateForm(instance=request.user.customer)
         password_form = PasswordChangeForm(request.user)
 
