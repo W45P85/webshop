@@ -96,6 +96,8 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(f'Einige Bestellungen wurden korrigiert. Details siehe {os.path.abspath(log_filename)}'))
 
     def is_valid_uuid(self, uuid_to_test):
+        if uuid_to_test is None or uuid_to_test == '':
+            return False
         try:
             uuid.UUID(uuid_to_test)
             return True
@@ -111,37 +113,25 @@ class Command(BaseCommand):
 
                     for row in rows:
                         order_id = row[1]
-                        try:
-                            uuid.UUID(order_id)
-                        except ValueError:
+                        if order_id is None or order_id == '':
                             new_order_id = uuid.uuid4()
-                            log_file.write(f'Bestellung {row[0]}: Bereinige ungültige Bestellnummer. Neue Bestellnummer: {new_order_id}\n')
-                            self.stdout.write(self.style.WARNING(f'Bestellung {row[0]}: Bereinige ungültige Bestellnummer. Neue Bestellnummer: {new_order_id}'))
+                            log_file.write(f'Bestellung {row[0]}: Bereinige fehlende Bestellnummer. Neue Bestellnummer: {new_order_id}\n')
+                            self.stdout.write(self.style.WARNING(f'Bestellung {row[0]}: Bereinige fehlende Bestellnummer. Neue Bestellnummer: {new_order_id}'))
                             cursor.execute(
                                 "UPDATE shop_order SET order_id = %s WHERE id = %s",
                                 [str(new_order_id), row[0]]
                             )
-
-                    cursor.execute("DROP TABLE IF EXISTS shop_order_temp")
-                    cursor.execute('''
-                        CREATE TABLE shop_order_temp (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            order_id TEXT NOT NULL,
-                            customer_id INTEGER,
-                            done BOOLEAN NOT NULL,
-                            created_at TIMESTAMP,
-                            updated_at TIMESTAMP
-                        )
-                    ''')
-
-                    cursor.execute('''
-                        INSERT INTO shop_order_temp (id, order_id, customer_id, done, created_at, updated_at)
-                        SELECT id, order_id, customer_id, done, created_at, updated_at
-                        FROM shop_order
-                    ''')
-
-                    cursor.execute("DROP TABLE shop_order")
-                    cursor.execute("ALTER TABLE shop_order_temp RENAME TO shop_order")
+                        else:
+                            try:
+                                uuid.UUID(order_id)
+                            except ValueError:
+                                new_order_id = uuid.uuid4()
+                                log_file.write(f'Bestellung {row[0]}: Bereinige ungültige Bestellnummer. Neue Bestellnummer: {new_order_id}\n')
+                                self.stdout.write(self.style.WARNING(f'Bestellung {row[0]}: Bereinige ungültige Bestellnummer. Neue Bestellnummer: {new_order_id}'))
+                                cursor.execute(
+                                    "UPDATE shop_order SET order_id = %s WHERE id = %s",
+                                    [str(new_order_id), row[0]]
+                                )
 
                 except IntegrityError as e:
                     log_file.write(f'IntegrityError in cleanup_invalid_order_ids: {str(e)}\n')

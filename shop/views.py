@@ -223,7 +223,7 @@ def bestellen(request):
             customer = request.user.customer
             order = Order.objects.filter(customer=customer, done=False).first()
             if order is None:
-                order = Order.objects.create(customer=customer, done=False)
+                order = Order.objects.create(customer=customer, done=False, created_at=datetime.now())
         else:
             customer, order = visitorOrder(request, data)
             if customer is None or order is None:
@@ -272,6 +272,9 @@ def bestellen(request):
         return response
 
     except Exception as e:
+        return HttpResponse(f'Fehler bei der Bestellung: {str(e)}')
+
+    except Exception as e:
         # Handle any exceptions gracefully and log them
         print(f"Fehler bei der Bestellung: {str(e)}")
         return HttpResponse('Es ist ein Fehler bei der Bestellung aufgetreten.')
@@ -301,7 +304,6 @@ def order(request, id):
         ctx = {'articles': articles, 'order': order}
         return render(request, 'shop/order.html', ctx)
     else:
-        # Debugging-Informationen
         if not order.customer:
             messages.error(request, "Bestellung hat keinen zugeordneten Kunden.")
         elif not hasattr(order.customer, 'user'):

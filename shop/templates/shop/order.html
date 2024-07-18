@@ -7,7 +7,7 @@
             <div class="shadow p-2 mb-4">
                 <div class="d-flex">
                     <h3 class="me-auto fw-bold p-2">Bestellübersicht</h3>
-                    <p class="p-2">AuftragsID: {{order.order_id}}</p>
+                    <p class="p-2">Auftragsnummer: {{order.order_id}}</p>
                     <p class="p-2">Käufer: {{order.customer}}</p>
                     <p class="fw-bold p-2">Gesamtpreis: {{order.get_cart_total|floatformat:2}} €</p>
                 </div>
@@ -15,10 +15,11 @@
         </div>
         <div class="col-12">
             <div class="shadow p-2 mb-4">
+              <p class="float-end p-2">Bestelldatum: {{order.created_at}}</p>
                 <table class="table table-striped table-hover">
                     <thead>
                       <tr>
-                        <th scope="col">Nr.</th>
+                        <th scope="col">Position</th>
                         <th scope="col">Bild</th>
                         <th scope="col">Artikel</th>
                         <th scope="col">Menge</th>
@@ -34,7 +35,7 @@
                         <td>{{article.article.name}}</td>
                         <td>{{article.quantity}}</td>
                         <td>{{article.article.price|floatformat:2}} €</td>
-                        <td>{{article.get_total|floatformat:2}}</td>
+                        <td>{{article.get_total|floatformat:2}} €</td>
                       </tr>
                       {% endfor %}
                     </tbody>

@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+from datetime import datetime
 from decimal import Decimal
 
 
@@ -13,7 +14,6 @@ class Customer(models.Model):
             return self.user.username
         else:
             return 'Unbekannter Kunde'
-
 
     @property
     def email(self):
@@ -42,6 +42,8 @@ class Order(models.Model):
     order_date = models.DateTimeField(auto_now_add=True)
     done = models.BooleanField(default=False, null=True, blank=False)
     order_id = models.CharField(max_length=200, null=True)
+    created_at = models.DateTimeField(default=datetime.now)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return str(self.id)
