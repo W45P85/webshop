@@ -4,200 +4,183 @@
 Profil Aktualisierung - DanShop
 {% endblock %}
 
-{% block extra_head %}
-<style>
-    .profile-picture-preview {
-        max-width: 150px;
-        max-height: 150px;
-        margin-bottom: 10px;
-    }
-</style>
-{% endblock %}
-
 {% block content %}
-<div class="container mt-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <h2 class="mb-4">Profil aktualisieren</h2>
-            <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
-                {% csrf_token %}
-                {% if user_form.non_field_errors %}
-                    <div class="alert alert-danger">
-                        {% for error in user_form.non_field_errors %}
-                            <div>{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                {% endif %}
+<div class="container rounded bg-white mt-5 mb-5">
+    <div class="row">
+        <!-- Profile Picture and Basic Info -->
+        <div class="col-md-3 border-right text-center p-3 py-5">
+            <img class="profile-picture-preview" src="{{ profile_form.instance.profile_picture.url }}" alt="Profilbild">
+        </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        {{ user_form.username.label_tag }}
-                        {{ user_form.username }}
-                        {% if user_form.username.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in user_form.username.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        {{ user_form.email.label_tag }}
-                        {{ user_form.email }}
-                        {% if user_form.email.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in user_form.email.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
+        <!-- Profile Update Form -->
+        <div class="col-md-9">
+            <div class="p-3 py-5">
+                <h4 class="text-right mb-4">Profil aktualisieren</h4>
+                <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
+                    {% csrf_token %}
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        {{ user_form.first_name.label_tag }}
-                        {{ user_form.first_name }}
-                        {% if user_form.first_name.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in user_form.first_name.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        {{ user_form.last_name.label_tag }}
-                        {{ user_form.last_name }}
-                        {% if user_form.last_name.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in user_form.last_name.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <div class="mb-3">
-                    <label for="id_profile_picture">Profilbild:</label><br>
-                    <img class="profile-picture-preview p-4" src="{{ profile_form.instance.profile_picture.url }}" alt="Profilbild" width="200px">
-                    {{ profile_form.profile_picture }}
-                    {% if profile_form.profile_picture.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in profile_form.profile_picture.errors %}
-                                <span>{{ error }}</span>
+                    <!-- Display Form Errors -->
+                    {% if user_form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {% for error in user_form.non_field_errors %}
+                                <div>{{ error }}</div>
                             {% endfor %}
                         </div>
                     {% endif %}
-                </div>
 
-                <hr class="mb-4">
-
-                <h4 class="mb-3">Passwort ändern</h4>
-
-                <div class="mb-3">
-                    {{ password_form.old_password.label_tag }}
-                    {{ password_form.old_password }}
-                    {% if password_form.old_password.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in password_form.old_password.errors %}
-                                <span>{{ error }}</span>
-                            {% endfor %}
+                    <!-- User Information -->
+                    <div class="row mt-2">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ user_form.username.id_for_label }}" class="form-label">{{ user_form.username.label }}</label>
+                            {{ user_form.username|default:""|safe }}
+                            {% if user_form.username.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in user_form.username.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
-                    {% endif %}
-                </div>
-                <div class="mb-3">
-                    {{ password_form.new_password1.label_tag }}
-                    {{ password_form.new_password1 }}
-                    {% if password_form.new_password1.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in password_form.new_password1.errors %}
-                                <span>{{ error }}</span>
-                            {% endfor %}
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ user_form.email.id_for_label }}" class="form-label">{{ user_form.email.label }}</label>
+                            {{ user_form.email|default:""|safe }}
+                            {% if user_form.email.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in user_form.email.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
                         </div>
-                    {% endif %}
-                </div>
-                <div class="mb-3">
-                    {{ password_form.new_password2.label_tag }}
-                    {{ password_form.new_password2 }}
-                    {% if password_form.new_password2.errors %}
-                        <div class="invalid-feedback d-block">
-                            {% for error in password_form.new_password2.errors %}
-                                <span>{{ error }}</span>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                </div>
+                    </div>
 
-                <hr class="mb-4">
-
-                <!-- Adress Update Form -->
-                <h4 class="mb-3">Adresse aktualisieren</h4>
-                <div class="row">
-                    <div class="col-md-12 mb-3">
-                        Straße und Hausnummer:
-                        {{ address_form.address }}
-                        {% if address_form.address.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in address_form.address.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        Stadt:
-                        {{ address_form.city }}
-                        {% if address_form.city.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in address_form.city.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        Bundesland (optional)
-                        {{ address_form.state }}
-                        {% if address_form.state.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in address_form.state.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        Postleitzahl:
-                        {{ address_form.zipcode }}
-                        {% if address_form.zipcode.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in address_form.zipcode.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        Land:
-                        {{ address_form.country }}
-                        {% if address_form.country.errors %}
-                            <div class="invalid-feedback d-block">
-                                {% for error in address_form.country.errors %}
-                                    <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endif %}
-                    </div>
+                    <!-- Profile Picture -->
                     <div class="mb-3">
-                        {{ address_form.is_default.label_tag }}
-                        {{ address_form.is_default }}
+                        <label for="{{ profile_form.profile_picture.id_for_label }}" class="form-label">{{ profile_form.profile_picture.label }}</label>
+                        {{ profile_form.profile_picture|default:""|safe }}
+                        {% if profile_form.profile_picture.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in profile_form.profile_picture.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
-                </div>
-                <hr class="mb-4">
-                <button type="submit" class="btn btn-primary btn-lg btn-block">Profil aktualisieren</button>
-            </form>
+
+                    <hr class="my-4">
+
+                    <!-- Password Change Form -->
+                    <h4 class="mb-3">Passwort ändern</h4>
+                    <div class="row mt-2">
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ password_form.old_password.id_for_label }}" class="form-label">{{ password_form.old_password.label }}</label>
+                            {{ password_form.old_password|default:""|safe }}
+                            {% if password_form.old_password.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in password_form.old_password.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ password_form.new_password1.id_for_label }}" class="form-label">{{ password_form.new_password1.label }}</label>
+                            {{ password_form.new_password1|default:""|safe }}
+                            {% if password_form.new_password1.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in password_form.new_password1.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ password_form.new_password2.id_for_label }}" class="form-label">{{ password_form.new_password2.label }}</label>
+                            {{ password_form.new_password2|default:""|safe }}
+                            {% if password_form.new_password2.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in password_form.new_password2.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Address Update Form -->
+                    <h4 class="mb-3">Adresse aktualisieren</h4>
+                    <div class="row mt-2">
+                        <div class="col-md-12 mb-3">
+                            <label for="{{ address_form.address.id_for_label }}" class="form-label">Adresse</label>
+                            {{ address_form.address|default:""|safe }}
+                            {% if address_form.address.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in address_form.address.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ address_form.zipcode.id_for_label }}" class="form-label">Postleitzahl</label>
+                            {{ address_form.zipcode|default:""|safe }}
+                            {% if address_form.zipcode.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in address_form.zipcode.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ address_form.city.id_for_label }}" class="form-label">Stadt</label>
+                            {{ address_form.city|default:""|safe }}
+                            {% if address_form.city.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in address_form.city.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ address_form.state.id_for_label }}" class="form-label">Bundesland (oprtional)</label>
+                            {{ address_form.state|default:""|safe }}
+                            {% if address_form.state.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in address_form.state.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ address_form.country.id_for_label }}" class="form-label">Land</label>
+                            {{ address_form.country|default:""|safe }}
+                            {% if address_form.country.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in address_form.country.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <div class="form-check">
+                                {{ address_form.is_default }}
+                                <label class="form-check-label" for="{{ address_form.is_default.id_for_label }}">
+                                    Als Standardadresse speichern
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+                    <button type="submit" class="btn btn-primary profile-button">Profil aktualisieren</button>
+                </form>
+            </div>
         </div>
     </div>
 </div>
