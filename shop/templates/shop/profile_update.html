@@ -132,10 +132,71 @@ Profil Aktualisierung - DanShop
 
                 <hr class="mb-4">
 
+                <!-- Adress Update Form -->
+                <h4 class="mb-3">Adresse aktualisieren</h4>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        Straße und Hausnummer:
+                        {{ address_form.address }}
+                        {% if address_form.address.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in address_form.address.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        Stadt:
+                        {{ address_form.city }}
+                        {% if address_form.city.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in address_form.city.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        Bundesland (optional)
+                        {{ address_form.state }}
+                        {% if address_form.state.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in address_form.state.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        Postleitzahl:
+                        {{ address_form.zipcode }}
+                        {% if address_form.zipcode.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in address_form.zipcode.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        Land:
+                        {{ address_form.country }}
+                        {% if address_form.country.errors %}
+                            <div class="invalid-feedback d-block">
+                                {% for error in address_form.country.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr class="mb-4">
+
                 <button type="submit" class="btn btn-primary btn-lg btn-block">Profil aktualisieren</button>
             </form>
         </div>
     </div>
 </div>
-
 {% endblock %}

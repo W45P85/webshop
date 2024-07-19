@@ -12,7 +12,7 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from datetime import timedelta
-from . forms import CustomerCreationForm, CustomerProfileForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, CustomerProfileUpdateForm, UserUpdateForm
+from . forms import CustomerCreationForm, CustomerProfileForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, CustomerProfileUpdateForm, UserUpdateForm, AdressUpdateForm 
 from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
@@ -84,6 +84,18 @@ def kasse(request):
         customer = request.user.customer
         order, created = Order.objects.get_or_create(customer=customer, done=False)
         articles = order.orderdarticle_set.all()
+        
+        # Versuche, die Standardadresse des Kunden zu finden
+        address = customer.addresses.filter(is_default=True).first()
+        
+        # Wenn keine Standardadresse gefunden wird, nehme die letzte gespeicherte Adresse
+        if not address:
+            address = customer.addresses.order_by('-date').first()
+
+        if address:
+            logging.debug(f"Adresse gefunden: {address.address}, {address.city}, {address.zipcode}, {address.country}")
+        else:
+            logging.debug("Keine Adresse gefunden")
     else:
         if is_cookie_accepted(request, 'essential'):
             cookiedata = visitorCookieHandler(request)
@@ -92,11 +104,16 @@ def kasse(request):
         else:
             articles = []
             order = None
+        address = None
 
-    ctx = {'articles': articles, 
-           'order': order,
-        }
+    ctx = {
+        'articles': articles,
+        'order': order,
+        'address': address,
+    }
     return render(request, 'shop/kasse.html', ctx)
+
+
 
 def artikelBackend(request):
     data = json.loads(request.body)
@@ -162,6 +179,18 @@ def regUser(request):
                 customer.profile_picture = request.FILES['profile_picture']
                 customer.save()
 
+            address_data = {
+                'address': profile_form.cleaned_data.get('address'),
+                'city': profile_form.cleaned_data.get('city'),
+                'state': profile_form.cleaned_data.get('state'),
+                'zipcode': profile_form.cleaned_data.get('zipcode'),
+                'country': profile_form.cleaned_data.get('country'),
+                'customer': customer,
+                'is_default': True
+            }
+            if any(address_data.values()):
+                Adress.objects.create(**address_data)
+
             login(request, user)
             messages.success(request, f'Benutzer {user.username} wurde erfolgreich erstellt.')
             return redirect('shop')
@@ -184,8 +213,9 @@ def update_profile(request):
         user_form = UserUpdateForm(request.POST, instance=request.user)
         profile_form = CustomerProfileUpdateForm(request.POST, request.FILES, instance=request.user.customer)
         password_form = PasswordChangeForm(request.user, request.POST)
+        address_form = AdressUpdateForm(request.POST, instance=request.user.customer.addresses.filter(is_default=True).first())
 
-        if user_form.is_valid() and profile_form.is_valid():
+        if user_form.is_valid() and profile_form.is_valid() and address_form.is_valid():
             user = user_form.save()
             profile = profile_form.save(commit=False)
             profile.user = user  # Ensure the user field of Customer model is set correctly
@@ -194,6 +224,11 @@ def update_profile(request):
                 profile.profile_picture = request.FILES['profile_picture']
 
             profile.save()
+            address = address_form.save(commit=False)
+            address.customer = user.customer  # Ensure the address is linked to the user
+            address.is_default = True  # Mark as default address, if needed
+            address.save()
+
             update_session_auth_hash(request, user)
             messages.success(request, 'Ihr Profil wurde erfolgreich aktualisiert.')
             return redirect('profile_update')
@@ -208,11 +243,13 @@ def update_profile(request):
         user_form = UserUpdateForm(instance=request.user)
         profile_form = CustomerProfileUpdateForm(instance=request.user.customer)
         password_form = PasswordChangeForm(request.user)
+        address_form = AdressUpdateForm(instance=request.user.customer.addresses.filter(is_default=True).first())
 
     return render(request, 'shop/profile_update.html', {
         'user_form': user_form,
         'profile_form': profile_form,
-        'password_form': password_form
+        'password_form': password_form,
+        'address_form': address_form
     })
 
 
@@ -231,66 +268,72 @@ def bestellen(request):
     try:
         order_id = uuid.uuid4()
         data = json.loads(request.body)
+        
+        # Default cart_total value
+        cart_total = 0.00
 
         if request.user.is_authenticated:
             customer = request.user.customer
             order = Order.objects.filter(customer=customer, done=False).first()
             if order is None:
-                order = Order.objects.create(customer=customer, done=False, created_at=datetime.now())
+                order = Order.objects.create(customer=customer, done=False, created_at=timezone.now())
+
+            # Retrieve or create delivery address
+            address_data = {
+                'address': data['deliveryAddress']['address'],
+                'zipcode': data['deliveryAddress']['zip'],
+                'city': data['deliveryAddress']['city'],
+                'state': data['deliveryAddress']['country'],
+                'country': data['deliveryAddress']['country']
+            }
+            address, created = Adress.objects.update_or_create(
+                customer=customer, order=order, defaults=address_data
+            )
+
         else:
             customer, order = visitorOrder(request, data)
             if customer is None or order is None:
                 return HttpResponse('Fehler bei der Bestellung für anonymen Benutzer.')
 
         # Convert cart_total to float
-        cart_total_str = data['customerData']['cart_total'].replace(',', '.')
-        cart_total = float(cart_total_str)
+        cart_total_data = data['customerData'].get('cart_total', '0.00')
+
+        if isinstance(cart_total_data, str):
+            cart_total_data = cart_total_data.replace(',', '.')
+            cart_total = float(cart_total_data)
+        elif isinstance(cart_total_data, (int, float)):
+            cart_total = float(cart_total_data)
+        else:
+            return HttpResponseBadRequest("Invalid cart total format")
 
         # Mark the order as done and assign the order_id
         order.order_id = order_id
         order.done = True
         order.save()
 
-        # Create delivery address
-        Adress.objects.create(
-            customer=customer,
-            order=order,
-            address=data['deliveryAdress']['adress'],
-            zipcode=data['deliveryAdress']['zip'],
-            city=data['deliveryAdress']['city'],
-            state=data['deliveryAdress']['country'],
-        )
-
         # PayPal payment setup
         paypal_dict = {
             "business": 'sb-n9yva31537598@business.example.com',
             "amount": format(cart_total, '.2f'),
-            "invoice": order_id,
+            "invoice": str(order_id),  # Convert UUID to string
             "currency_code": "EUR",
             "notify_url": request.build_absolute_uri(reverse('paypal-ipn')),
             "return": request.build_absolute_uri(reverse('shop')),
             "cancel_return": request.build_absolute_uri(reverse('shop')),
         }
 
-        paypalForm = PayPalPaymentsForm(initial=paypal_dict)
+        paypal_form = PayPalPaymentsForm(initial=paypal_dict)
 
         # Construct success message with order link and PayPal form
-        orderURL = str(order_id)
-        messages.success(request, mark_safe(f"Vielen Dank für Ihre <a href='/order/{orderURL}'>Bestellung: {orderURL}</a><br> Jetzt mit PayPal bezahlen: {paypalForm.render()}"))
+        order_url = str(order_id)
+        messages.success(request, mark_safe(
+            f"Vielen Dank für Ihre <a href='/order/{order_url}'>Bestellung: {order_url}</a><br> Jetzt mit PayPal bezahlen: {paypal_form.render()}"))
 
         # Delete cart cookie to clear current cart
         response = HttpResponse('Bestellung erfolgreich')
         response.delete_cookie('cart')
 
         return response
-
-    except Exception as e:
-        return HttpResponse(f'Fehler bei der Bestellung: {str(e)}')
-
-    except Exception as e:
-        # Handle any exceptions gracefully and log them
-        print(f"Fehler bei der Bestellung: {str(e)}")
-        return HttpResponse('Es ist ein Fehler bei der Bestellung aufgetreten.')
 
     except ValueError as e:
         logging.error(f"ValueError: {e}")

@@ -30,12 +30,35 @@ class CustomerCreationForm(UserCreationForm):
         return user
 
 class CustomerProfileForm(forms.ModelForm):
+    address = forms.CharField(max_length=200, required=False, label='Adresse')
+    city = forms.CharField(max_length=200, required=False, label='Stadt')
+    state = forms.CharField(max_length=200, required=False, label='Bundesland')
+    zipcode = forms.CharField(max_length=200, required=False, label='Postleitzahl')
+    country = forms.CharField(max_length=200, required=False, label='Land')
+
     class Meta:
         model = Customer
-        fields = ['profile_picture']
+        fields = ['profile_picture', 'address', 'city', 'state', 'zipcode', 'country']
         widgets = {
             'profile_picture': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
         }
+
+    def save(self, commit=True):
+        customer = super().save(commit=False)
+        if commit:
+            customer.save()
+            Adress.objects.update_or_create(
+                customer=customer,
+                defaults={
+                    'address': self.cleaned_data.get('address', ''),
+                    'city': self.cleaned_data.get('city', ''),
+                    'state': self.cleaned_data.get('state', ''),
+                    'zipcode': self.cleaned_data.get('zipcode', ''),
+                    'country': self.cleaned_data.get('country', ''),
+                    'is_default': True
+                }
+            )
+        return customer
 
 
 class CustomerProfileUpdateForm(forms.ModelForm):
@@ -55,6 +78,18 @@ class UserUpdateForm(forms.ModelForm):
             'email': forms.EmailInput(attrs={'class': 'form-control'}),
             'first_name': forms.TextInput(attrs={'class': 'form-control'}),
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
+        }
+
+class AdressUpdateForm(forms.ModelForm):
+    class Meta:
+        model = Adress
+        fields = ['address', 'city', 'state', 'zipcode', 'country']
+        widgets = {
+            'address': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_address'}),
+            'city': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_city'}),
+            'state': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_state'}),
+            'zipcode': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_zipcode'}),
+            'country': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_country'}),
         }
 
 

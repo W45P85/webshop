@@ -1,35 +1,76 @@
 {% extends "shop/index.html" %}
 
 {% block content %}
-    <div class="container mt-4">
-        <div class="row">
-            <div class="col-lg-4 col-md-6 mb-4">
-                <div class="shadow p-4">
-                    <h3>Bestellübersicht</h3>
-                    <hr>
-                    {% for article in articles %}
-                    <div class="d-flex">
-                        <p class="p-2">{{ article.quantity }}</p>
-                        <p class="me-auto p-2"><a href="{% url 'article_detail' id=article.article.id %}">{{ article.article.name }}</a></p>
-                        <p class="p-2">{{ article.get_total|floatformat:2 }} €</p>
-                    </div>
-                    {% endfor %}
-                    <hr>
-                    <div class="d-flex">
-                        <p class="me-auto fw-bold p-2">Menge: {{order.get_cart_items}}</p>
-                        <p class="fw-bold p-2">Gesamtpreis: {{order.get_cart_total|floatformat:2}} €</p>
-                        <input type="text" class="d-none" id="cart_total" value="{{order.get_cart_total|floatformat:2}}">
-                    </div>
-                </div>
-            </div>
+<body class="bg-body-tertiary">
+    <div class="dropdown position-fixed bottom-0 end-0 mb-3 me-3 bd-mode-toggle">
+        <button class="btn btn-bd-primary py-2 dropdown-toggle d-flex align-items-center"
+                id="bd-theme"
+                type="button"
+                aria-expanded="false"
+                data-bs-toggle="dropdown"
+                aria-label="Toggle theme (auto)">
+            <svg class="bi my-1 theme-icon-active" width="1em" height="1em"><use href="#circle-half"></use></svg>
+            <span class="visually-hidden" id="bd-theme-text">Toggle theme</span>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="bd-theme-text">
+            <li>
+                <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="light" aria-pressed="false">
+                    <svg class="bi me-2 opacity-50" width="1em" height="1em"><use href="#sun-fill"></use></svg>
+                    Light
+                    <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
+                </button>
+            </li>
+            <li>
+                <button type="button" class="dropdown-item d-flex align-items-center" data-bs-theme-value="dark" aria-pressed="false">
+                    <svg class="bi me-2 opacity-50" width="1em" height="1em"><use href="#moon-stars-fill"></use></svg>
+                    Dark
+                    <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
+                </button>
+            </li>
+            <li>
+                <button type="button" class="dropdown-item d-flex align-items-center active" data-bs-theme-value="auto" aria-pressed="true">
+                    <svg class="bi me-2 opacity-50" width="1em" height="1em"><use href="#circle-half"></use></svg>
+                    Auto
+                    <svg class="bi ms-auto d-none" width="1em" height="1em"><use href="#check2"></use></svg>
+                </button>
+            </li>
+        </ul>
+    </div>
 
-            <div class="col-lg-8 col-md-6 mb-4">
-                <div class="shadow p-4">
-                    <form id="formular" class="row g-3">
+    <div class="container mt-5">
+        <div class="row g-5">
+            <div class="col-md-5 col-lg-4 order-md-last">
+                <h4 class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-primary">Bestellübersicht</span>
+                    <span class="badge bg-primary rounded-pill">{{ order.get_cart_items }}</span>
+                </h4>
+                <ul class="list-group mb-3">
+                    {% for article in articles %}
+                    <li class="list-group-item d-flex justify-content-between lh-sm">
+                        <div>
+                            <h6 class="my-0"><a href="{% url 'article_detail' id=article.article.id %}">{{ article.article.name }}</a></h6>
+                            <small class="text-body-secondary">Menge: {{ article.quantity }}</small>
+                        </div>
+                        <span class="text-body-secondary">{{ article.get_total|floatformat:2 }} €</span>
+                    </li>
+                    {% endfor %}
+                    <li class="list-group-item d-flex justify-content-between bg-body-tertiary">
+                        <div class="text-success">
+                            <h6 class="my-0">Gesamtpreis</h6>
+                        </div>
+                        <span class="text-success">{{ order.get_cart_total|floatformat:2 }} €</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="col-md-7 col-lg-8">
+                <h4 class="mb-3">Billing address</h4>
+                <form id="formular" method="POST" action="{% url 'bestellen' %}" class="needs-validation" novalidate>
+                    {% csrf_token %}
+                    <div class="row g-3">
                         <div class="col-md-6">
                             <label for="inputName" class="form-label">Name</label>
                             {% if request.user.is_authenticated %}
-                            <input type="text" class="form-control" id="inputName" value="{{request.user|title}}" required>
+                            <input type="text" class="form-control" id="inputName" value="{{ request.user.get_full_name }}" required>
                             {% else %}
                             <input type="text" class="form-control" id="inputName" required>
                             {% endif %}
@@ -37,36 +78,66 @@
                         <div class="col-md-6">
                             <label for="inputEmail" class="form-label">Email</label>
                             {% if request.user.is_authenticated %}
-                            <input type="email" class="form-control" id="inputEmail" value="{{request.user.email}}" required>
+                            <input type="email" class="form-control" id="inputEmail" value="{{ request.user.email }}" required>
                             {% else %}
                             <input type="email" class="form-control" id="inputEmail" required>
                             {% endif %}
                         </div>
-                        <div class="col-12">
-                            <label for="inputAdress" class="form-label">Adresse</label>
-                            <input type="text" class="form-control" id="inputAdress" required>
+                        <div class="col-md-6">
+                            <label for="inputAddress" class="form-label">Adresse</label>
+                            {% if request.user.is_authenticated and address %}
+                            <input type="text" class="form-control" id="inputAddress" name="address" value="{{ address.address }}" required>
+                            {% else %}
+                            <input type="text" class="form-control" id="inputAddress" name="address" required>
+                            {% endif %}
                         </div>
-                        <div class="col-md-2">
-                            <label for="inputPlz" class="form-label">Postleitzahl</label>
-                            <input type="text" class="form-control" id="inputPlz" required>
+                        <div class="col-md-6">
+                            <label for="inputZip" class="form-label">Postleitzahl</label>
+                            {% if request.user.is_authenticated and address %}
+                            <input type="text" class="form-control" id="inputZip" name="zip" value="{{ address.zipcode }}" required>
+                            {% else %}
+                            <input type="text" class="form-control" id="inputZip" name="zip" required>
+                            {% endif %}
                         </div>
-                        <div class="col-md-5">
-                            <label for="inputStadt" class="form-label">Stadt</label>
-                            <input type="text" class="form-control" id="inputStadt" required>
+                        <div class="col-md-6">
+                            <label for="inputCity" class="form-label">Stadt</label>
+                            {% if request.user.is_authenticated and address %}
+                            <input type="text" class="form-control" id="inputCity" name="city" value="{{ address.city }}" required>
+                            {% else %}
+                            <input type="text" class="form-control" id="inputCity" name="city" required>
+                            {% endif %}
                         </div>
-                        <div class="col-md-5">
-                            <label for="inputLand" class="form-label">Land</label>
-                            <input type="text" class="form-control" id="inputLand" required>
+                        <div class="col-md-6">
+                            <label for="inputCountry" class="form-label">Land</label>
+                            <select class="form-select" id="inputCountry" name="country" required>
+                                <option value="">Land wählen...</option>
+                                <option value="DE" {% if address and address.country == "DE" %}selected{% endif %}>Deutschland</option>
+                                <option value="AT" {% if address and address.country == "AT" %}selected{% endif %}>Österreich</option>
+                                <option value="CH" {% if address and address.country == "CH" %}selected{% endif %}>Schweiz</option>
+                            </select>
                         </div>
-                        <div class="col-12 d-flex justify-content-end">
-                            <button type="submit" id="formular-button" class="btn btn-secondary">weiter</button>
-                        </div>
-                    </form>
+                    </div>
+                    <!-- Payment section in the form -->
+                    <hr class="my-4">
+                    <h4 class="mb-3">Payment</h4>
+                        <input id="cart_total" type="hidden" name="cart_total" value="0.00"> <!-- Hier fügen Sie das versteckte Input-Feld hinzu -->
+                    <div class="form-check">
+                        <input id="credit" name="paymentMethod" type="radio" class="form-check-input" disabled>
+                        <label class="form-check-label text-muted" for="credit">Kreditkarte (Momentan nicht verfügbar)</label>
+                    </div>
+                    <div class="form-check">
+                        <input id="paypal" name="paymentMethod" type="radio" class="form-check-input" checked>
+                        <label class="form-check-label" for="paypal">PayPal</label>
+                    </div>
+                    <hr class="my-4">
                     <div class="d-flex d-none" id="bezahlen-info">
                         <p class="me-auto fw-bold">Zahlung: Paypal</p>
                         <button class="btn btn-danger" id="bezahlen-button">Bezahlen</button>
                     </div>
-                </div>
+                    <div class="col-12 d-flex justify-content-end">
+                        <button type="submit" id="formular-button" class="btn btn-secondary">weiter</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
