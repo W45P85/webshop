@@ -8,9 +8,8 @@ from decimal import Decimal
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pics', default='profile_pics/none.png')
-    
+
     def __str__(self):
-        print(f"Calling __str__ method of {self.__class__.__name__}")
         if self.user:
             return self.user.username
         else:

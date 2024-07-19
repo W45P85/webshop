@@ -5,10 +5,12 @@ from .models import *
 
 class CustomerCreationForm(UserCreationForm):
     email = forms.EmailField(label='Email', required=True)
+    first_name = forms.CharField(label='Vorname', max_length=30, required=True)
+    last_name = forms.CharField(label='Nachname', max_length=30, required=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password1', 'password2']
+        fields = ['username', 'first_name', 'last_name', 'email', 'password1', 'password2']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -21,20 +23,26 @@ class CustomerCreationForm(UserCreationForm):
         self.fields['password2'].label = 'Passwort wiederholen'
         self.fields['email'].widget.attrs.update({'class': 'form-control'})
         self.fields['email'].label = 'Email'
+        self.fields['first_name'].widget.attrs.update({'class': 'form-control'})
+        self.fields['first_name'].label = 'Vorname'
+        self.fields['last_name'].widget.attrs.update({'class': 'form-control'})
+        self.fields['last_name'].label = 'Nachname'
 
     def save(self, commit=True):
         user = super().save(commit=False)
         user.email = self.cleaned_data['email']
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
         if commit:
             user.save()
         return user
 
 class CustomerProfileForm(forms.ModelForm):
-    address = forms.CharField(max_length=200, required=False, label='Adresse')
-    city = forms.CharField(max_length=200, required=False, label='Stadt')
-    state = forms.CharField(max_length=200, required=False, label='Bundesland')
-    zipcode = forms.CharField(max_length=200, required=False, label='Postleitzahl')
-    country = forms.CharField(max_length=200, required=False, label='Land')
+    address = forms.CharField(max_length=200, required=True, label='Adresse')
+    city = forms.CharField(max_length=200, required=True, label='Stadt')
+    state = forms.CharField(max_length=200, required=True, label='Bundesland')
+    zipcode = forms.CharField(max_length=200, required=True, label='Postleitzahl')
+    country = forms.CharField(max_length=200, required=True, label='Land')
 
     class Meta:
         model = Customer
