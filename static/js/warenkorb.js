@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     // Initialisierung und Event-Listener für den Warenkorb
     let bestellButtons = document.getElementsByClassName('warenkorb-bestellen');
-    console.log('Bestell-Buttons gefunden:', bestellButtons.length);
+    // console.log('Bestell-Buttons gefunden:', bestellButtons.length);
 
     for (let i = 0; i < bestellButtons.length; i++) {
         bestellButtons[i].addEventListener('click', function () {
@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function () {
     let formular = document.getElementById('formular');
     let cartTotalInput = document.getElementById('cart_total');
 
-    console.log('Formular gefunden:', formular);
-    console.log('Cart Total Input gefunden:', cartTotalInput);
+    // console.log('Formular gefunden:', formular);
+    // console.log('Cart Total Input gefunden:', cartTotalInput);
 
     if (formular && cartTotalInput) {
         let cart_total = parseFloat(cartTotalInput.value.replace(',', '.')) || 0;

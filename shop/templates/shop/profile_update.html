@@ -190,10 +190,12 @@ Profil Aktualisierung - DanShop
                             </div>
                         {% endif %}
                     </div>
+                    <div class="mb-3">
+                        {{ address_form.is_default.label_tag }}
+                        {{ address_form.is_default }}
+                    </div>
                 </div>
-
                 <hr class="mb-4">
-
                 <button type="submit" class="btn btn-primary btn-lg btn-block">Profil aktualisieren</button>
             </form>
         </div>

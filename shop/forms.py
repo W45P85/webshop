@@ -80,10 +80,13 @@ class UserUpdateForm(forms.ModelForm):
             'last_name': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
+
 class AdressUpdateForm(forms.ModelForm):
+    is_default = forms.BooleanField(required=False, label='Als Standardadresse setzen')
+
     class Meta:
         model = Adress
-        fields = ['address', 'city', 'state', 'zipcode', 'country']
+        fields = ['address', 'city', 'state', 'zipcode', 'country', 'is_default']
         widgets = {
             'address': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_address'}),
             'city': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_city'}),
@@ -91,7 +94,6 @@ class AdressUpdateForm(forms.ModelForm):
             'zipcode': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_zipcode'}),
             'country': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_country'}),
         }
-
 
 class SearchForm(forms.Form):
     query = forms.CharField(

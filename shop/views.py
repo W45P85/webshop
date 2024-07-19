@@ -20,6 +20,7 @@ from paypal.standard.forms import PayPalPaymentsForm
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from urllib.parse import unquote
 
+logging.basicConfig(level=logging.DEBUG)
 
 def shop(request):
     categories = Category.objects.annotate(num_articles=Count('article')).order_by('name')
@@ -212,38 +213,73 @@ def update_profile(request):
     if request.method == 'POST':
         user_form = UserUpdateForm(request.POST, instance=request.user)
         profile_form = CustomerProfileUpdateForm(request.POST, request.FILES, instance=request.user.customer)
-        password_form = PasswordChangeForm(request.user, request.POST)
         address_form = AdressUpdateForm(request.POST, instance=request.user.customer.addresses.filter(is_default=True).first())
 
         if user_form.is_valid() and profile_form.is_valid() and address_form.is_valid():
+            # Save user and profile data
             user = user_form.save()
             profile = profile_form.save(commit=False)
-            profile.user = user  # Ensure the user field of Customer model is set correctly
+            profile.user = user
 
             if 'profile_picture' in request.FILES:
                 profile.profile_picture = request.FILES['profile_picture']
 
             profile.save()
-            address = address_form.save(commit=False)
-            address.customer = user.customer  # Ensure the address is linked to the user
-            address.is_default = True  # Mark as default address, if needed
+
+            # Process address
+            address_data = address_form.cleaned_data
+            is_default = address_data.get('is_default', False)
+
+            if address_form.instance and address_form.instance.pk:
+                # Update existing address
+                address = address_form.save(commit=False)
+            else:
+                # Create new address if no instance was provided
+                address = Adress(customer=user.customer)
+
+            # Update address fields
+            for field in ['address', 'city', 'state', 'zipcode', 'country']:
+                setattr(address, field, address_data.get(field, getattr(address, field)))
+
+            if is_default:
+                # Set this address as the default address and remove other default addresses
+                Adress.objects.filter(customer=user.customer).update(is_default=False)
+                address.is_default = True
+
             address.save()
 
+            # Confirm address update
+            updated_address = Adress.objects.filter(customer=user.customer, is_default=True).first()
+            if not updated_address:
+                updated_address = Adress.objects.filter(customer=user.customer).order_by('-date').first()
+
+            # Update session auth hash to avoid logout
             update_session_auth_hash(request, user)
             messages.success(request, 'Ihr Profil wurde erfolgreich aktualisiert.')
             return redirect('profile_update')
         else:
-            # Only show password form errors if it's necessary to change the password
-            if 'password1' in request.POST and 'password2' in request.POST:
-                if not password_form.is_valid():
-                    messages.error(request, 'Bitte korrigieren Sie die Fehler unten.')
-            else:
-                messages.error(request, 'Bitte korrigieren Sie die Fehler unten.')
+            # Specific error messages
+            if not user_form.is_valid():
+                messages.error(request, 'Es gab ein Problem mit Ihren Benutzerdaten. Bitte überprüfen Sie die eingegebenen Informationen.')
+            if not profile_form.is_valid():
+                messages.error(request, 'Ihr Profil konnte nicht aktualisiert werden. Bitte überprüfen Sie die Profilinformationen.')
+            if not address_form.is_valid():
+                messages.error(request, 'Die Adresse konnte nicht aktualisiert werden. Bitte überprüfen Sie die Adressdaten.')
+
+            # Optionally, redirect back to the form page
+            return redirect('profile_update')
     else:
+        # For GET requests, populate the forms
         user_form = UserUpdateForm(instance=request.user)
         profile_form = CustomerProfileUpdateForm(instance=request.user.customer)
         password_form = PasswordChangeForm(request.user)
-        address_form = AdressUpdateForm(instance=request.user.customer.addresses.filter(is_default=True).first())
+
+        # Get the default address or the last saved address
+        default_address = request.user.customer.addresses.filter(is_default=True).first()
+        if not default_address:
+            default_address = request.user.customer.addresses.order_by('-date').first()
+
+        address_form = AdressUpdateForm(instance=default_address)
 
     return render(request, 'shop/profile_update.html', {
         'user_form': user_form,
@@ -251,6 +287,7 @@ def update_profile(request):
         'password_form': password_form,
         'address_form': address_form
     })
+
 
 
 def check_and_fix_customers():
