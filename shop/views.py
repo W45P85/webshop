@@ -12,7 +12,7 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from datetime import timedelta
-from . forms import CustomerCreationForm, CustomerProfileForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, CustomerProfileUpdateForm, UserUpdateForm, AdressUpdateForm 
+from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm
 from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
@@ -50,7 +50,6 @@ def is_cookie_accepted(request, cookie_name):
     # Decode the URL-encoded cookie value
     decoded_consent = unquote(cookie_consent)
     accepted_cookies = decoded_consent.split(',')
-    print(f"Accepted cookies: {accepted_cookies}")
     return cookie_name in accepted_cookies
 
 
@@ -79,6 +78,7 @@ def warenkorb(request):
     }
 
     return render(request, 'shop/warenkorb.html', ctx)
+
 
 def kasse(request):
     if request.user.is_authenticated:
@@ -115,7 +115,6 @@ def kasse(request):
     return render(request, 'shop/kasse.html', ctx)
 
 
-
 def artikelBackend(request):
     data = json.loads(request.body)
     print(f"Data received: {data}")
@@ -140,6 +139,7 @@ def artikelBackend(request):
 
     return JsonResponse("Artikel hinzugefügt", safe=False)
 
+
 def loginSeite(request):
     page = 'login'
     if request.method == 'POST':
@@ -155,6 +155,7 @@ def loginSeite(request):
 
     return render(request, 'shop/login.html', {'page': page})
 
+
 def logoutUser(request):
     if request.user.is_authenticated:
         # Löschen der offene Bestellungen des aktuellen Benutzers
@@ -166,31 +167,13 @@ def logoutUser(request):
 
 def regUser(request):
     page = 'reg'
-    user_form = CustomerCreationForm()
-    profile_form = CustomerProfileForm()
-
     if request.method == 'POST':
         user_form = CustomerCreationForm(request.POST)
-        profile_form = CustomerProfileForm(request.POST, request.FILES)
+        profile_form = ProfileForm(request.POST, request.FILES)
+        
         if user_form.is_valid() and profile_form.is_valid():
             user = user_form.save()
-            customer = Customer.objects.create(user=user)
-
-            if 'profile_picture' in request.FILES:
-                customer.profile_picture = request.FILES['profile_picture']
-                customer.save()
-
-            address_data = {
-                'address': profile_form.cleaned_data.get('address'),
-                'city': profile_form.cleaned_data.get('city'),
-                'state': profile_form.cleaned_data.get('state'),
-                'zipcode': profile_form.cleaned_data.get('zipcode'),
-                'country': profile_form.cleaned_data.get('country'),
-                'customer': customer,
-                'is_default': True
-            }
-            if any(address_data.values()):
-                Adress.objects.create(**address_data)
+            customer = profile_form.save(user=user)
 
             login(request, user)
             messages.success(request, f'Benutzer {user.username} wurde erfolgreich erstellt.')
@@ -203,6 +186,9 @@ def regUser(request):
                 error_messages.extend(profile_form.errors.values())
             for error in error_messages:
                 messages.error(request, error)
+    else:
+        user_form = CustomerCreationForm()
+        profile_form = ProfileForm()
 
     ctx = {'user_form': user_form, 'profile_form': profile_form, 'page': page}
     return render(request, 'shop/registration_form.html', ctx)
@@ -210,84 +196,46 @@ def regUser(request):
 
 @login_required
 def update_profile(request):
+    user = request.user
+    customer = user.customer
+    
+    # Adressfindungslogik
+    address = customer.addresses.filter(is_default=True).first()
+    if not address:
+        address = customer.addresses.order_by('-date').first()
+
     if request.method == 'POST':
-        user_form = UserUpdateForm(request.POST, instance=request.user)
-        profile_form = CustomerProfileUpdateForm(request.POST, request.FILES, instance=request.user.customer)
-        address_form = AdressUpdateForm(request.POST, instance=request.user.customer.addresses.filter(is_default=True).first())
-
-        if user_form.is_valid() and profile_form.is_valid() and address_form.is_valid():
-            # Save user and profile data
-            user = user_form.save()
-            profile = profile_form.save(commit=False)
-            profile.user = user
-
-            if 'profile_picture' in request.FILES:
-                profile.profile_picture = request.FILES['profile_picture']
-
-            profile.save()
-
-            # Process address
-            address_data = address_form.cleaned_data
-            is_default = address_data.get('is_default', False)
-
-            if address_form.instance and address_form.instance.pk:
-                # Update existing address
-                address = address_form.save(commit=False)
-            else:
-                # Create new address if no instance was provided
-                address = Adress(customer=user.customer)
-
-            # Update address fields
-            for field in ['address', 'city', 'state', 'zipcode', 'country']:
-                setattr(address, field, address_data.get(field, getattr(address, field)))
-
-            if is_default:
-                # Set this address as the default address and remove other default addresses
-                Adress.objects.filter(customer=user.customer).update(is_default=False)
-                address.is_default = True
-
-            address.save()
-
-            # Confirm address update
-            updated_address = Adress.objects.filter(customer=user.customer, is_default=True).first()
-            if not updated_address:
-                updated_address = Adress.objects.filter(customer=user.customer).order_by('-date').first()
-
-            # Update session auth hash to avoid logout
-            update_session_auth_hash(request, user)
-            messages.success(request, 'Ihr Profil wurde erfolgreich aktualisiert.')
+        profile_form = ProfileForm(request.POST, request.FILES, instance=customer)
+        password_form = PasswordChangeForm(user, request.POST)
+        
+        if profile_form.is_valid() and password_form.is_valid():
+            profile_form.save(user)
+            password_form.save()
+            messages.success(request, 'Profil wurde erfolgreich aktualisiert.')
             return redirect('profile_update')
         else:
-            # Specific error messages
-            if not user_form.is_valid():
-                messages.error(request, 'Es gab ein Problem mit Ihren Benutzerdaten. Bitte überprüfen Sie die eingegebenen Informationen.')
-            if not profile_form.is_valid():
-                messages.error(request, 'Ihr Profil konnte nicht aktualisiert werden. Bitte überprüfen Sie die Profilinformationen.')
-            if not address_form.is_valid():
-                messages.error(request, 'Die Adresse konnte nicht aktualisiert werden. Bitte überprüfen Sie die Adressdaten.')
-
-            # Optionally, redirect back to the form page
-            return redirect('profile_update')
+            messages.error(request, 'Bitte korrigieren Sie die Fehler im Formular.')
     else:
-        # For GET requests, populate the forms
-        user_form = UserUpdateForm(instance=request.user)
-        profile_form = CustomerProfileUpdateForm(instance=request.user.customer)
-        password_form = PasswordChangeForm(request.user)
-
-        # Get the default address or the last saved address
-        default_address = request.user.customer.addresses.filter(is_default=True).first()
-        if not default_address:
-            default_address = request.user.customer.addresses.order_by('-date').first()
-
-        address_form = AdressUpdateForm(instance=default_address)
-
-    return render(request, 'shop/profile_update.html', {
-        'user_form': user_form,
+        profile_form = ProfileForm(instance=customer, initial={
+            'username': user.username,
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'address': address.address if address else '',
+            'city': address.city if address else '',
+            'state': address.state if address else '',
+            'zipcode': address.zipcode if address else '',
+            'country': address.country if address else '',
+            'is_default': address.is_default if address else False,
+        })
+        password_form = PasswordChangeForm(user)
+    
+    ctx = {
         'profile_form': profile_form,
-        'password_form': password_form,
-        'address_form': address_form
-    })
-
+        'password_form': password_form
+    }
+    
+    return render(request, 'shop/profile_update.html', ctx)
 
 
 def check_and_fix_customers():
@@ -301,13 +249,29 @@ def check_and_fix_customers():
             # customer.save()
             print(f"Customer {customer.id} hat keine zugeordnete User-Instanz.")
 
+
 def bestellen(request):
     try:
         order_id = uuid.uuid4()
         data = json.loads(request.body)
-        
+        logging.info(f"Received data: {data}")
+
         # Default cart_total value
         cart_total = 0.00
+
+        # Server-side validation of required fields in customerData and deliveryAddress
+        required_customer_fields = ['name', 'email']
+        required_address_fields = ['address', 'zip', 'city', 'country']
+        
+        for field in required_customer_fields:
+            if field not in data['customerData'] or not data['customerData'][field]:
+                logging.error(f"Missing or empty field in customerData: {field}")
+                return HttpResponseBadRequest(f"Field '{field}' is required.")
+        
+        for field in required_address_fields:
+            if field not in data['deliveryAddress'] or not data['deliveryAddress'][field]:
+                logging.error(f"Missing or empty field in deliveryAddress: {field}")
+                return HttpResponseBadRequest(f"Field '{field}' is required.")
 
         if request.user.is_authenticated:
             customer = request.user.customer
@@ -315,7 +279,6 @@ def bestellen(request):
             if order is None:
                 order = Order.objects.create(customer=customer, done=False, created_at=timezone.now())
 
-            # Retrieve or create delivery address
             address_data = {
                 'address': data['deliveryAddress']['address'],
                 'zipcode': data['deliveryAddress']['zip'],
@@ -332,9 +295,8 @@ def bestellen(request):
             if customer is None or order is None:
                 return HttpResponse('Fehler bei der Bestellung für anonymen Benutzer.')
 
-        # Convert cart_total to float
         cart_total_data = data['customerData'].get('cart_total', '0.00')
-
+        
         if isinstance(cart_total_data, str):
             cart_total_data = cart_total_data.replace(',', '.')
             cart_total = float(cart_total_data)
@@ -343,16 +305,14 @@ def bestellen(request):
         else:
             return HttpResponseBadRequest("Invalid cart total format")
 
-        # Mark the order as done and assign the order_id
         order.order_id = order_id
         order.done = True
         order.save()
 
-        # PayPal payment setup
         paypal_dict = {
             "business": 'sb-n9yva31537598@business.example.com',
             "amount": format(cart_total, '.2f'),
-            "invoice": str(order_id),  # Convert UUID to string
+            "invoice": str(order_id),
             "currency_code": "EUR",
             "notify_url": request.build_absolute_uri(reverse('paypal-ipn')),
             "return": request.build_absolute_uri(reverse('shop')),
@@ -361,12 +321,13 @@ def bestellen(request):
 
         paypal_form = PayPalPaymentsForm(initial=paypal_dict)
 
-        # Construct success message with order link and PayPal form
         order_url = str(order_id)
         messages.success(request, mark_safe(
-            f"Vielen Dank für Ihre <a href='/order/{order_url}'>Bestellung: {order_url}</a><br> Jetzt mit PayPal bezahlen: {paypal_form.render()}"))
+            f"Vielen Dank für Ihre Bestellung: <a href='/order/{order_url}'>{order_url}</a>"
+            "<br>Jetzt mit PayPal bezahlen:"
+            f"<br>{paypal_form.render()}"
+        ))
 
-        # Delete cart cookie to clear current cart
         response = HttpResponse('Bestellung erfolgreich')
         response.delete_cookie('cart')
 

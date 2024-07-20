@@ -1,4 +1,5 @@
 {% extends "shop/index.html" %}
+{% load static %}
 
 {% block title %}
 Profil Aktualisierung - DanShop
@@ -9,20 +10,24 @@ Profil Aktualisierung - DanShop
     <div class="row">
         <!-- Profile Picture and Basic Info -->
         <div class="col-md-3 border-right text-center p-3 py-5">
-            <img class="profile-picture-preview" src="{{ profile_form.instance.profile_picture.url }}" alt="Profilbild">
+            {% if profile_form.instance.profile_picture %}
+                <img class="profile-picture-preview" src="{{ profile_form.instance.profile_picture.url }}" alt="Profilbild">
+            {% else %}
+                <img class="profile-picture-preview" src="{% static 'images/default_profile_picture.jpg' %}" alt="Profilbild">
+            {% endif %}
         </div>
 
         <!-- Profile Update Form -->
         <div class="col-md-9">
+            <h2 class="text-right mb-4">Profil aktualisieren</h2>
             <div class="p-3 py-5">
-                <h4 class="text-right mb-4">Profil aktualisieren</h4>
                 <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
                     {% csrf_token %}
 
                     <!-- Display Form Errors -->
-                    {% if user_form.non_field_errors %}
+                    {% if profile_form.non_field_errors %}
                         <div class="alert alert-danger">
-                            {% for error in user_form.non_field_errors %}
+                            {% for error in profile_form.non_field_errors %}
                                 <div>{{ error }}</div>
                             {% endfor %}
                         </div>
@@ -31,22 +36,22 @@ Profil Aktualisierung - DanShop
                     <!-- User Information -->
                     <div class="row mt-2">
                         <div class="col-md-6 mb-3">
-                            <label for="{{ user_form.username.id_for_label }}" class="form-label">{{ user_form.username.label }}</label>
-                            {{ user_form.username|default:""|safe }}
-                            {% if user_form.username.errors %}
+                            <label for="{{ profile_form.username.id_for_label }}" class="form-label">{{ profile_form.username.label }}</label>
+                            {{ profile_form.username|default:""|safe }}
+                            {% if profile_form.username.errors %}
                                 <div class="invalid-feedback">
-                                    {% for error in user_form.username.errors %}
+                                    {% for error in profile_form.username.errors %}
                                         <span>{{ error }}</span>
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="{{ user_form.email.id_for_label }}" class="form-label">{{ user_form.email.label }}</label>
-                            {{ user_form.email|default:""|safe }}
-                            {% if user_form.email.errors %}
+                            <label for="{{ profile_form.email.id_for_label }}" class="form-label">{{ profile_form.email.label }}</label>
+                            {{ profile_form.email|default:""|safe }}
+                            {% if profile_form.email.errors %}
                                 <div class="invalid-feedback">
-                                    {% for error in user_form.email.errors %}
+                                    {% for error in profile_form.email.errors %}
                                         <span>{{ error }}</span>
                                     {% endfor %}
                                 </div>
@@ -109,59 +114,81 @@ Profil Aktualisierung - DanShop
 
                     <hr class="my-4">
 
-                    <!-- Address Update Form -->
+                    <!-- Address Information -->
                     <h4 class="mb-3">Adresse aktualisieren</h4>
                     <div class="row mt-2">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ profile_form.first_name.id_for_label }}" class="form-label">Vorname</label>
+                            {{ profile_form.first_name|default:""|safe }}
+                            {% if profile_form.first_name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in profile_form.first_name.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ profile_form.last_name.id_for_label }}" class="form-label">Nachname</label>
+                            {{ profile_form.last_name|default:""|safe }}
+                            {% if profile_form.last_name.errors %}
+                                <div class="invalid-feedback">
+                                    {% for error in profile_form.last_name.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
                         <div class="col-md-12 mb-3">
-                            <label for="{{ address_form.address.id_for_label }}" class="form-label">Adresse</label>
-                            {{ address_form.address|default:""|safe }}
-                            {% if address_form.address.errors %}
+                            <label for="{{ profile_form.address.id_for_label }}" class="form-label">Adresse</label>
+                            {{ profile_form.address|default:""|safe }}
+                            {% if profile_form.address.errors %}
                                 <div class="invalid-feedback">
-                                    {% for error in address_form.address.errors %}
+                                    {% for error in profile_form.address.errors %}
                                         <span>{{ error }}</span>
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="{{ address_form.zipcode.id_for_label }}" class="form-label">Postleitzahl</label>
-                            {{ address_form.zipcode|default:""|safe }}
-                            {% if address_form.zipcode.errors %}
+                            <label for="{{ profile_form.zipcode.id_for_label }}" class="form-label">Postleitzahl</label>
+                            {{ profile_form.zipcode|default:""|safe }}
+                            {% if profile_form.zipcode.errors %}
                                 <div class="invalid-feedback">
-                                    {% for error in address_form.zipcode.errors %}
+                                    {% for error in profile_form.zipcode.errors %}
                                         <span>{{ error }}</span>
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="{{ address_form.city.id_for_label }}" class="form-label">Stadt</label>
-                            {{ address_form.city|default:""|safe }}
-                            {% if address_form.city.errors %}
+                            <label for="{{ profile_form.city.id_for_label }}" class="form-label">Stadt</label>
+                            {{ profile_form.city|default:""|safe }}
+                            {% if profile_form.city.errors %}
                                 <div class="invalid-feedback">
-                                    {% for error in address_form.city.errors %}
+                                    {% for error in profile_form.city.errors %}
                                         <span>{{ error }}</span>
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="{{ address_form.state.id_for_label }}" class="form-label">Bundesland (oprtional)</label>
-                            {{ address_form.state|default:""|safe }}
-                            {% if address_form.state.errors %}
+                            <label for="{{ profile_form.state.id_for_label }}" class="form-label">Bundesland (optional)</label>
+                            {{ profile_form.state|default:""|safe }}
+                            {% if profile_form.state.errors %}
                                 <div class="invalid-feedback">
-                                    {% for error in address_form.state.errors %}
+                                    {% for error in profile_form.state.errors %}
                                         <span>{{ error }}</span>
                                     {% endfor %}
                                 </div>
                             {% endif %}
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="{{ address_form.country.id_for_label }}" class="form-label">Land</label>
-                            {{ address_form.country|default:""|safe }}
-                            {% if address_form.country.errors %}
+                            <label for="{{ profile_form.country.id_for_label }}" class="form-label">Land</label>
+                            {{ profile_form.country|default:""|safe }}
+                            {% if profile_form.country.errors %}
                                 <div class="invalid-feedback">
-                                    {% for error in address_form.country.errors %}
+                                    {% for error in profile_form.country.errors %}
                                         <span>{{ error }}</span>
                                     {% endfor %}
                                 </div>
@@ -169,8 +196,8 @@ Profil Aktualisierung - DanShop
                         </div>
                         <div class="col-md-12 mb-3">
                             <div class="form-check">
-                                {{ address_form.is_default }}
-                                <label class="form-check-label" for="{{ address_form.is_default.id_for_label }}">
+                                {{ profile_form.is_default }}
+                                <label class="form-check-label" for="{{ profile_form.is_default.id_for_label }}">
                                     Als Standardadresse speichern
                                 </label>
                             </div>

@@ -37,71 +37,58 @@ class CustomerCreationForm(UserCreationForm):
             user.save()
         return user
 
-class CustomerProfileForm(forms.ModelForm):
+
+class ProfileForm(forms.ModelForm):
+    username = forms.CharField(max_length=150, required=True, label='Benutzername')
+    email = forms.EmailField(max_length=254, required=True, label='E-Mail')
+    first_name = forms.CharField(max_length=100, required=True, label='Vorname')
+    last_name = forms.CharField(max_length=100, required=True, label='Nachname')
+    profile_picture = forms.ImageField(required=False, label='Profilbild', widget=forms.ClearableFileInput(attrs={'class': 'form-control-file'}))
     address = forms.CharField(max_length=200, required=True, label='Adresse')
     city = forms.CharField(max_length=200, required=True, label='Stadt')
     state = forms.CharField(max_length=200, required=True, label='Bundesland')
     zipcode = forms.CharField(max_length=200, required=True, label='Postleitzahl')
     country = forms.CharField(max_length=200, required=True, label='Land')
-
-    class Meta:
-        model = Customer
-        fields = ['profile_picture', 'address', 'city', 'state', 'zipcode', 'country']
-        widgets = {
-            'profile_picture': forms.ClearableFileInput(attrs={'class': 'form-control-file'}),
-        }
-
-    def save(self, commit=True):
-        customer = super().save(commit=False)
-        if commit:
-            customer.save()
-            Adress.objects.update_or_create(
-                customer=customer,
-                defaults={
-                    'address': self.cleaned_data.get('address', ''),
-                    'city': self.cleaned_data.get('city', ''),
-                    'state': self.cleaned_data.get('state', ''),
-                    'zipcode': self.cleaned_data.get('zipcode', ''),
-                    'country': self.cleaned_data.get('country', ''),
-                    'is_default': True
-                }
-            )
-        return customer
-
-
-class CustomerProfileUpdateForm(forms.ModelForm):
-    class Meta:
-        model = Customer
-        fields = ['profile_picture']
-        widgets = {
-            'profile_picture': forms.ClearableFileInput(attrs={'class': 'form-control-file', 'id': 'id_profile_picture'}),
-        }
-
-class UserUpdateForm(forms.ModelForm):
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'first_name', 'last_name']
-        widgets = {
-            'username': forms.TextInput(attrs={'class': 'form-control'}),
-            'email': forms.EmailInput(attrs={'class': 'form-control'}),
-            'first_name': forms.TextInput(attrs={'class': 'form-control'}),
-            'last_name': forms.TextInput(attrs={'class': 'form-control'}),
-        }
-
-
-class AdressUpdateForm(forms.ModelForm):
     is_default = forms.BooleanField(required=False, label='Als Standardadresse setzen')
 
     class Meta:
-        model = Adress
-        fields = ['address', 'city', 'state', 'zipcode', 'country', 'is_default']
-        widgets = {
-            'address': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_address'}),
-            'city': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_city'}),
-            'state': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_state'}),
-            'zipcode': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_zipcode'}),
-            'country': forms.TextInput(attrs={'class': 'form-control', 'id': 'id_country'}),
+        model = Customer
+        fields = ['username', 'email', 'first_name', 'last_name', 'profile_picture', 'address', 'city', 'state', 'zipcode', 'country', 'is_default']
+    
+    def save(self, user, commit=True):
+        # Update user fields
+        user.username = self.cleaned_data['username']
+        user.email = self.cleaned_data['email']
+        user.first_name = self.cleaned_data['first_name']
+        user.last_name = self.cleaned_data['last_name']
+        if commit:
+            user.save()
+        
+        # Update customer fields
+        customer = super().save(commit=False)
+        if 'profile_picture' in self.cleaned_data and self.cleaned_data['profile_picture']:
+            customer.profile_picture = self.cleaned_data['profile_picture']
+        customer.user = user
+        if commit:
+            customer.save()
+
+        # Update address fields
+        address_data = {
+            'first_name': self.cleaned_data['first_name'],
+            'last_name': self.cleaned_data['last_name'],
+            'address': self.cleaned_data['address'],
+            'city': self.cleaned_data['city'],
+            'state': self.cleaned_data['state'],
+            'zipcode': self.cleaned_data['zipcode'],
+            'country': self.cleaned_data['country'],
+            'is_default': self.cleaned_data['is_default'],
         }
+        Adress.objects.update_or_create(
+            customer=customer,
+            defaults=address_data
+        )
+        return customer
+
 
 class SearchForm(forms.Form):
     query = forms.CharField(
@@ -113,8 +100,6 @@ class SearchForm(forms.Form):
             'placeholder': 'Artikelname, Beschreibung oder Kategorie eingeben...'
         })
     )
-    
-
 
 
 class AddArticleForm(forms.ModelForm):

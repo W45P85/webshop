@@ -1,15 +1,10 @@
 document.addEventListener('DOMContentLoaded', function () {
     // Initialisierung und Event-Listener für den Warenkorb
     let bestellButtons = document.getElementsByClassName('warenkorb-bestellen');
-    // console.log('Bestell-Buttons gefunden:', bestellButtons.length);
-
     for (let i = 0; i < bestellButtons.length; i++) {
         bestellButtons[i].addEventListener('click', function () {
             let articleId = this.dataset.artikel;
             let action = this.dataset.action;
-
-            console.log(`Warenkorb-Aktion: ${action}, Artikel-ID: ${articleId}`);
-
             if (user === 'AnonymousUser') {
                 updateAnonymousOrder(articleId, action);
             } else {
@@ -18,38 +13,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // Überprüfen der Formular- und cart_total-Elemente
     let formular = document.getElementById('formular');
     let cartTotalInput = document.getElementById('cart_total');
 
-    // console.log('Formular gefunden:', formular);
-    // console.log('Cart Total Input gefunden:', cartTotalInput);
-
     if (formular && cartTotalInput) {
-        let cart_total = parseFloat(cartTotalInput.value.replace(',', '.')) || 0;
-        console.log('Initialer Cart Total:', cart_total);
-
         formular.addEventListener('submit', function (event) {
             event.preventDefault();
-            console.log('Formular abgeschickt');
-
+            if (!formular.checkValidity()) {
+                event.stopPropagation();
+                formular.classList.add('was-validated');
+                return;
+            }
             // Überprüfen, ob PayPal ausgewählt ist
             if (document.getElementById('paypal').checked) {
-                console.log('PayPal ausgewählt');
                 document.getElementById('bezahlen-info').classList.remove('d-none');
                 document.getElementById('formular-button').classList.add('d-none');
             } else {
-                console.log('PayPal nicht ausgewählt');
                 document.getElementById('bezahlen-info').classList.add('d-none');
                 document.getElementById('formular-button').classList.remove('d-none');
             }
         });
 
-        // Event Listener für den PayPal-Button
         let bezahlenButton = document.getElementById('bezahlen-button');
         if (bezahlenButton) {
             bezahlenButton.addEventListener('click', function () {
-                console.log('Bezahlen-Button geklickt');
                 submitFormular();
             });
         } else {
@@ -83,9 +70,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function updateCustomerOrder(articleId, action) {
-        console.log('Update Customer Order:', articleId, action);
         let url = '/artikel_backend/';
-
         fetch(url, {
             method: 'POST',
             headers: {
@@ -95,7 +80,6 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({ 'articleId': articleId, 'action': action })
         })
         .then(response => {
-            console.log('Antwort erhalten:', response);
             location.reload();
         })
         .catch(error => console.error('Fehler beim UpdateCustomerOrder:', error));
@@ -104,6 +88,12 @@ document.addEventListener('DOMContentLoaded', function () {
     function submitFormular() {
         if (!formular || !cartTotalInput) {
             console.error('Formular oder cart_total Input nicht gefunden.');
+            return;
+        }
+
+        if (!formular.checkValidity()) {
+            console.error('Formular ist nicht gültig.');
+            formular.classList.add('was-validated');
             return;
         }
 
@@ -120,9 +110,6 @@ document.addEventListener('DOMContentLoaded', function () {
             'country': formular.inputCountry.value
         };
 
-        console.log('Kundendaten:', customerData);
-        console.log('Lieferadresse:', deliveryAddress);
-
         let url = '/bestellen/';
 
         fetch(url, {
@@ -134,37 +121,8 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({ 'customerData': customerData, 'deliveryAddress': deliveryAddress })
         })
         .then(response => {
-            console.log('Antwort erhalten:', response);
             window.location.href = '/';
         })
         .catch(error => console.error('Fehler beim SubmitFormular:', error));
-    }
-
-    // Suche-Funktion
-    const searchInput = document.getElementById('search-input');
-    const searchResults = document.getElementById('search-results');
-
-    if (searchInput) {
-        searchInput.addEventListener('input', function () {
-            const query = searchInput.value;
-            if (query.length > 2) {
-                fetch(`/ajax/search/?query=${query}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Suchergebnisse:', data.results);
-                        searchResults.innerHTML = '';
-                        data.results.forEach(article => {
-                            const item = document.createElement('a');
-                            item.classList.add('list-group-item', 'list-group-item-action');
-                            item.href = `/shop/?query=${article.name}`;
-                            item.textContent = article.name;
-                            searchResults.appendChild(item);
-                        });
-                    })
-                    .catch(error => console.error('Fehler bei der Suche:', error));
-            } else {
-                searchResults.innerHTML = '';
-            }
-        });
     }
 });
