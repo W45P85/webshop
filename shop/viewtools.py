@@ -56,12 +56,24 @@ def visitorOrder(request, data):
         cookieData = visitorCookieHandler(request)
         articles = cookieData['articles']
         
-        # Find or create customer based on email (for anonymous users)
-        customer, created = Customer.objects.get_or_create(user__email=email)
+        # Find or create user based on email (for anonymous users)
+        user, user_created = User.objects.get_or_create(email=email, defaults={'username': email})
         
-        if created:
-            customer.name = name
-            customer.save()
+        if user_created:
+            user.set_unusable_password()  # Setze ein nicht verwendbares Passwort für den anonymen Benutzer
+        
+        # Setze den Namen des Users
+        if ' ' in name:
+            first_name, last_name = name.split(' ', 1)
+        else:
+            first_name = name
+            last_name = ''
+        user.first_name = first_name
+        user.last_name = last_name
+        user.save()
+        
+        # Find or create customer based on user
+        customer, customer_created = Customer.objects.get_or_create(user=user)
         
         order = Order.objects.create(customer=customer, done=False)
         
@@ -83,3 +95,4 @@ def visitorOrder(request, data):
         # Handle any exceptions gracefully and log them
         print(f"Fehler bei der Verarbeitung der Bestellung: {str(e)}")
         return None, None
+
