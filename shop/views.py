@@ -367,8 +367,10 @@ def order(request, id):
         
         return redirect('shop')
 
+
 def error404(request, exception):
     return render(request, 'shop/404.html')
+
 
 @login_required(login_url='login')
 def admin_dashboard(request):
@@ -427,6 +429,7 @@ def admin_dashboard(request):
 
     return render(request, 'shop/admin_dashboard.html', ctx)
 
+
 @login_required
 def customer_dashboard(request):
     try:
@@ -472,6 +475,7 @@ def customer_dashboard(request):
     else:
         # Handle Fall, wenn der Kunde nicht gefunden wird
         return render(request, 'shop/customer_not_found.html')
+
 
 def search_results(request):
     form = SearchForm(request.GET)
@@ -525,10 +529,13 @@ def add_article(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'shop/add_article.html', {'form': form, 
-                                                     'page_obj': page_obj, 
-                                                     'articles': articles})
-    
+    return render(request, 'shop/add_article.html', {
+        'form': form,
+        'page_obj': page_obj, 
+        'articles': articles
+    })
+
+
 @login_required(login_url='login')
 def edit_article(request, article_id):
     if not request.user.is_superuser:
@@ -550,10 +557,12 @@ def edit_article(request, article_id):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'shop/add_article.html', {'form': form, 
-                                                     'page_obj': page_obj, 
-                                                     'articles': articles})
-    
+    return render(request, 'shop/add_article.html', {
+        'form': form,
+        'page_obj': page_obj,
+        'articles': articles
+    })
+
 
 @login_required(login_url='login')
 def add_category(request):
@@ -585,7 +594,6 @@ def add_category(request):
     return render(request, 'shop/add_category.html', {'form': form, 'categories': categories})
 
 
-
 @login_required
 def delete_article_confirmation(request, article_id):
     article = get_object_or_404(Article, id=article_id)
@@ -606,6 +614,7 @@ def article_detail(request, id):
 
 def imprint(request):
     return render(request, 'shop/legal/imprint.html')
+
 
 def privacy(request):
     return render(request, 'shop/legal/privacy.html')

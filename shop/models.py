@@ -7,7 +7,7 @@ from decimal import Decimal
 
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
-    profile_picture = models.ImageField(upload_to='profile_pics', default='profile_pics/none.png')
+    profile_picture = models.ImageField(upload_to='profile_pics/', default='profile_pics/none.png')
 
     def __str__(self):
         if self.user:
@@ -31,7 +31,7 @@ class Article(models.Model):
     name = models.CharField(max_length=200, null=True)
     description = models.TextField(null=True, blank=True)
     price = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
-    img = models.ImageField(null=True, blank=True)
+    img = models.ImageField(null=True, blank=True, upload_to='product_images/', default='article_pics/none.jpeg')
     category = models.ForeignKey('Category', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
