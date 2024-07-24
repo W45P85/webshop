@@ -51,8 +51,10 @@ Profil Aktualisierung - DanShop
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label for="{{ profile_form.email.id_for_label }}" class="form-label">{{ profile_form.email.label }}</label>
-                            {{ profile_form.email|default:""|safe }}
+                            <div>
+                                <label for="email-display" class="form-label mb-0 me-3">E-Mail</label>
+                                <p id="email-display" class="form-control-plaintext mb-0">{{ profile_form.email.value|default:"" }}</p>
+                            </div>
                             {% if profile_form.email.errors %}
                                 <div class="invalid-feedback">
                                     {% for error in profile_form.email.errors %}
@@ -143,7 +145,7 @@ Profil Aktualisierung - DanShop
                         </div>
                     </div>
                     <div class="form-group mb-4">
-                        <label for="{{ profile_form.address.id_for_label }}" class="form-label">Adresse</label>
+                        <label for="{{ profile_form.address.id_for_label }}" class="form-label">Straße und Hausnummer</label>
                         {{ profile_form.address|default:""|safe }}
                         {% if profile_form.address.errors %}
                             <div class="invalid-feedback">

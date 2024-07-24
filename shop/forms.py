@@ -48,12 +48,35 @@ class ProfileForm(forms.ModelForm):
     is_default = forms.BooleanField(required=False, label='Als Standardadresse setzen')
     first_name = forms.CharField(max_length=30, required=False, label='Vorname')
     last_name = forms.CharField(max_length=30, required=False, label='Nachname')
-    email = forms.EmailField(required=True)
-    username = forms.CharField(max_length=150, required=True)
+    email = forms.EmailField(required=False)
+    username = forms.CharField(max_length=150, required=False)
 
     class Meta:
         model = Customer
         fields = ['profile_picture', 'username', 'email', 'first_name', 'last_name', 'address', 'city', 'state', 'zipcode', 'country', 'is_default']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['username'].widget.attrs.update({'class': 'form-control'})
+        self.fields['username'].label = 'Benutzername'
+        self.fields['email'].widget.attrs.update({'class': 'form-control'})
+        self.fields['email'].label = 'Email'
+        self.fields['first_name'].widget.attrs.update({'class': 'form-control'})
+        self.fields['first_name'].label = 'Vorname'
+        self.fields['last_name'].widget.attrs.update({'class': 'form-control'})
+        self.fields['last_name'].label = 'Nachname'
+        self.fields['address'].widget.attrs.update({'class': 'form-control'})
+        self.fields['address'].label = 'Adresse'
+        self.fields['city'].widget.attrs.update({'class': 'form-control'})
+        self.fields['city'].label = 'Stadt'
+        self.fields['state'].widget.attrs.update({'class': 'form-control'})
+        self.fields['state'].label = 'Bundesland'
+        self.fields['zipcode'].widget.attrs.update({'class': 'form-control'})
+        self.fields['zipcode'].label = 'Postleitzahl'
+        self.fields['country'].widget.attrs.update({'class': 'form-control'})
+        self.fields['country'].label = 'Land'
+        self.fields['is_default'].widget.attrs.update({'class': 'form-check-input'})
+        self.fields['is_default'].label = 'Als Standardadresse setzen'
     
     def save(self, user, commit=True):
         # Update customer fields

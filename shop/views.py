@@ -202,8 +202,6 @@ def regUser(request):
     return render(request, 'shop/registration_form.html', ctx)
 
 
-
-
 @login_required
 def update_profile(request):
     user = request.user
