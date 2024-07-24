@@ -1,0 +1,149 @@
+.logo {
+    max-height: 500px;
+    /* Weitere Stile nach Bedarf */
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    z-index: 1;
+}
+
+.card img {
+    height: 200px;
+    object-fit: cover;
+}
+
+.card-body {
+    flex: 1;
+}
+
+.card-title, .card-text {
+    margin: 0;
+}
+
+.row-cols-4 > * {
+    display: flex;
+    flex-direction: column;
+}
+
+.col {
+    display: flex;
+    flex-direction: column;
+    flex: 1 0 auto;
+}
+
+.link_shop {
+    text-decoration: none;
+    color: black;
+}
+
+.star-rating {
+    font-size: 1.5em;
+    color: #ffd700;
+}
+
+/* Entfernt den Dropdown-Pfeil im Profil-Dropdown */
+.dropdown-toggle::after {
+    display: none;
+}
+
+/* Optional: Zentriert den Text */
+.dropdown-toggle.no-caret {
+    padding-right: 0 !important;
+}
+
+
+
+/* ========== LOGIN, REGISTRATION ========== */
+.login-body {
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+.login-card {
+    max-width: 400px;
+    padding: 20px;
+    margin: auto;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    background-color: #fff;
+}
+.login-card-header {
+    background-color: #007bff;
+    color: #fff;
+    text-align: center;
+    padding: 10px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+.login-card-body {
+    padding: 20px;
+}
+.login-form-label {
+    font-weight: bold;
+}
+.login-form-control {
+    border-color: #ccc;
+}
+.login-btn {
+    width: 100%;
+    margin-top: 10px;
+}
+.login-link {
+    text-align: center;
+    margin-top: 15px;
+}
+.login-link a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+
+
+
+
+
+/* Add media queries for responsiveness */
+@media (max-width: 1200px) {
+    .row-cols-4 > * {
+        flex-basis: 25%; /* Adjust column basis for medium screens */
+    }
+}
+
+@media (max-width: 992px) {
+    .row-cols-4 > * {
+        flex-basis: 50%; /* Adjust column basis for smaller screens */
+    }
+}
+
+@media (max-width: 768px) {
+    .row-cols-4 > * {
+        flex-basis: 100%; /* Adjust column basis for mobile screens */
+    }
+}
+
+
+/* Profile */
+.profile-picture-preview {
+    max-width: 150px;
+    max-height: 150px;
+    border-radius: 50%;
+    margin-bottom: 10px;
+}
+
+.form-control, .form-control-file {
+    border-radius: 0.375rem;
+    border: 1px solid #ced4da;
+}
+
+.invalid-feedback {
+    display: block;
+}
+
+.profile-button {
+    width: 100%;
+    border-radius: 20px;
+    padding: 10px;
+}

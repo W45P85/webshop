@@ -1,4 +1,3 @@
-
 from pathlib import Path
 from django.contrib.messages import constants as messages
 from django.utils.translation import gettext_lazy as _
@@ -11,12 +10,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-$sg+2ao_9&#$dqmz2#zin^&@!4pi-5s5e)=hh%2ga!%oxm1926"
+SECRET_KEY = "((a)!5)^@%1pcjc4*1*-lcl6d&y1t5*x#-1i8go*pm)jjs=1-u"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['drukober.pythonanywhere.com', '127.0.0.1']
+
+
+# Security settings
+#SECURE_HSTS_SECONDS = 31536000  # 1 Jahr
+#SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+#SECURE_HSTS_PRELOAD = True
+#SECURE_SSL_REDIRECT = True
+#SESSION_COOKIE_SECURE = True
+#CSRF_COOKIE_SECURE = True
+
+
 
 MESSAGE_TAGS = {
     messages.DEBUG: 'alert-secondary',
@@ -133,6 +143,8 @@ STATIC_URL = "static/"
 STATICFILES_DIRS = [
     BASE_DIR / "static"
 ]
+
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files (User uploads)
 
