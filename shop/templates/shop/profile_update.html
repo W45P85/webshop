@@ -6,21 +6,25 @@ Profil Aktualisierung - DanShop
 {% endblock %}
 
 {% block content %}
-<div class="container rounded bg-white mt-5 mb-5">
+<div class="container mt-5 mb-5">
     <div class="row">
         <!-- Profile Picture and Basic Info -->
-        <div class="col-md-3 border-right text-center p-3 py-5">
-            {% if profile_form.instance.profile_picture %}
-                <img class="profile-picture-preview" src="{{ profile_form.instance.profile_picture.url }}" alt="Profilbild">
-            {% else %}
-                <img class="profile-picture-preview" src="{% static 'images/default_profile_picture.jpg' %}" alt="Profilbild">
-            {% endif %}
+        <div class="col-md-4 d-flex flex-column align-items-center mb-4">
+            <div class="card p-3 text-center">
+                {% if profile_form.instance.profile_picture %}
+                    <img class="profile-picture-preview img-fluid rounded-circle mb-3" src="{{ profile_form.instance.profile_picture.url }}" alt="Profilbild">
+                {% else %}
+                    <img class="profile-picture-preview img-fluid rounded-circle mb-3" src="{% static 'images/default_profile_picture.jpg' %}" alt="Profilbild">
+                {% endif %}
+                <h4 class="card-title">{{ user.username }}</h4>
+                <p class="card-text">{{ user.email }}</p>
+            </div>
         </div>
 
         <!-- Profile Update Form -->
-        <div class="col-md-9">
-            <h2 class="text-right mb-4">Profil aktualisieren</h2>
-            <div class="p-3 py-5">
+        <div class="col-md-8">
+            <div class="card p-4">
+                <h2 class="card-title mb-4">Profil aktualisieren</h2>
                 <form method="post" enctype="multipart/form-data" class="needs-validation" novalidate>
                     {% csrf_token %}
 
@@ -34,8 +38,8 @@ Profil Aktualisierung - DanShop
                     {% endif %}
 
                     <!-- User Information -->
-                    <div class="row mt-2">
-                        <div class="col-md-6 mb-3">
+                    <div class="form-group row mb-4">
+                        <div class="col-md-6">
                             <label for="{{ profile_form.username.id_for_label }}" class="form-label">{{ profile_form.username.label }}</label>
                             {{ profile_form.username|default:""|safe }}
                             {% if profile_form.username.errors %}
@@ -46,7 +50,7 @@ Profil Aktualisierung - DanShop
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <label for="{{ profile_form.email.id_for_label }}" class="form-label">{{ profile_form.email.label }}</label>
                             {{ profile_form.email|default:""|safe }}
                             {% if profile_form.email.errors %}
@@ -60,7 +64,7 @@ Profil Aktualisierung - DanShop
                     </div>
 
                     <!-- Profile Picture -->
-                    <div class="mb-3">
+                    <div class="form-group mb-4">
                         <label for="{{ profile_form.profile_picture.id_for_label }}" class="form-label">{{ profile_form.profile_picture.label }}</label>
                         {{ profile_form.profile_picture|default:""|safe }}
                         {% if profile_form.profile_picture.errors %}
@@ -76,50 +80,48 @@ Profil Aktualisierung - DanShop
 
                     <!-- Password Change Form -->
                     <h4 class="mb-3">Passwort ändern</h4>
-                    <div class="row mt-2">
-                        <div class="col-md-12 mb-3">
-                            <label for="{{ password_form.old_password.id_for_label }}" class="form-label">{{ password_form.old_password.label }}</label>
-                            {{ password_form.old_password|default:""|safe }}
-                            {% if password_form.old_password.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in password_form.old_password.errors %}
-                                        <span>{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-12 mb-3">
-                            <label for="{{ password_form.new_password1.id_for_label }}" class="form-label">{{ password_form.new_password1.label }}</label>
-                            {{ password_form.new_password1|default:""|safe }}
-                            {% if password_form.new_password1.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in password_form.new_password1.errors %}
-                                        <span>{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-12 mb-3">
-                            <label for="{{ password_form.new_password2.id_for_label }}" class="form-label">{{ password_form.new_password2.label }}</label>
-                            {{ password_form.new_password2|default:""|safe }}
-                            {% if password_form.new_password2.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in password_form.new_password2.errors %}
-                                        <span>{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
+                    <div class="form-group mb-4">
+                        <label for="{{ password_form.old_password.id_for_label }}" class="form-label">{{ password_form.old_password.label }}</label>
+                        {{ password_form.old_password|default:""|safe }}
+                        {% if password_form.old_password.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in password_form.old_password.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="{{ password_form.new_password1.id_for_label }}" class="form-label">{{ password_form.new_password1.label }}</label>
+                        {{ password_form.new_password1|default:""|safe }}
+                        {% if password_form.new_password1.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in password_form.new_password1.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="{{ password_form.new_password2.id_for_label }}" class="form-label">{{ password_form.new_password2.label }}</label>
+                        {{ password_form.new_password2|default:""|safe }}
+                        {% if password_form.new_password2.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in password_form.new_password2.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
 
                     <hr class="my-4">
 
                     <!-- Address Information -->
                     <h4 class="mb-3">Adresse aktualisieren</h4>
-                    <div class="row mt-2">
-                        <div class="col-md-6 mb-3">
+                    <div class="form-group row mb-4">
+                        <div class="col-md-6">
                             <label for="{{ profile_form.first_name.id_for_label }}" class="form-label">Vorname</label>
-                            {{ profile_form.first_name|default:""|safe }}
+                            {{ profile_form.first_name }}
                             {% if profile_form.first_name.errors %}
                                 <div class="invalid-feedback">
                                     {% for error in profile_form.first_name.errors %}
@@ -128,9 +130,9 @@ Profil Aktualisierung - DanShop
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <label for="{{ profile_form.last_name.id_for_label }}" class="form-label">Nachname</label>
-                            {{ profile_form.last_name|default:""|safe }}
+                            {{ profile_form.last_name }}
                             {% if profile_form.last_name.errors %}
                                 <div class="invalid-feedback">
                                     {% for error in profile_form.last_name.errors %}
@@ -139,18 +141,20 @@ Profil Aktualisierung - DanShop
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-12 mb-3">
-                            <label for="{{ profile_form.address.id_for_label }}" class="form-label">Adresse</label>
-                            {{ profile_form.address|default:""|safe }}
-                            {% if profile_form.address.errors %}
-                                <div class="invalid-feedback">
-                                    {% for error in profile_form.address.errors %}
-                                        <span>{{ error }}</span>
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        </div>
-                        <div class="col-md-6 mb-3">
+                    </div>
+                    <div class="form-group mb-4">
+                        <label for="{{ profile_form.address.id_for_label }}" class="form-label">Adresse</label>
+                        {{ profile_form.address|default:""|safe }}
+                        {% if profile_form.address.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in profile_form.address.errors %}
+                                    <span>{{ error }}</span>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group row mb-4">
+                        <div class="col-md-6">
                             <label for="{{ profile_form.zipcode.id_for_label }}" class="form-label">Postleitzahl</label>
                             {{ profile_form.zipcode|default:""|safe }}
                             {% if profile_form.zipcode.errors %}
@@ -161,7 +165,7 @@ Profil Aktualisierung - DanShop
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <label for="{{ profile_form.city.id_for_label }}" class="form-label">Stadt</label>
                             {{ profile_form.city|default:""|safe }}
                             {% if profile_form.city.errors %}
@@ -172,8 +176,10 @@ Profil Aktualisierung - DanShop
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label for="{{ profile_form.state.id_for_label }}" class="form-label">Bundesland (optional)</label>
+                    </div>
+                    <div class="form-group row mb-4">
+                        <div class="col-md-6">
+                            <label for="{{ profile_form.state.id_for_label }}" class="form-label">Bundesland</label>
                             {{ profile_form.state|default:""|safe }}
                             {% if profile_form.state.errors %}
                                 <div class="invalid-feedback">
@@ -183,7 +189,7 @@ Profil Aktualisierung - DanShop
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-6">
                             <label for="{{ profile_form.country.id_for_label }}" class="form-label">Land</label>
                             {{ profile_form.country|default:""|safe }}
                             {% if profile_form.country.errors %}
@@ -194,18 +200,12 @@ Profil Aktualisierung - DanShop
                                 </div>
                             {% endif %}
                         </div>
-                        <div class="col-md-12 mb-3">
-                            <div class="form-check">
-                                {{ profile_form.is_default }}
-                                <label class="form-check-label" for="{{ profile_form.is_default.id_for_label }}">
-                                    Als Standardadresse speichern
-                                </label>
-                            </div>
-                        </div>
                     </div>
 
-                    <hr class="my-4">
-                    <button type="submit" class="btn btn-primary profile-button">Profil aktualisieren</button>
+                    <!-- Submit Button -->
+                    <div class="text-end">
+                        <button class="btn btn-primary" type="submit">Änderungen speichern</button>
+                    </div>
                 </form>
             </div>
         </div>

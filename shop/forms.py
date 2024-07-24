@@ -39,43 +39,31 @@ class CustomerCreationForm(UserCreationForm):
 
 
 class ProfileForm(forms.ModelForm):
-    username = forms.CharField(max_length=150, required=True, label='Benutzername')
-    email = forms.EmailField(max_length=254, required=True, label='E-Mail')
-    first_name = forms.CharField(max_length=100, required=True, label='Vorname')
-    last_name = forms.CharField(max_length=100, required=True, label='Nachname')
     profile_picture = forms.ImageField(required=False, label='Profilbild', widget=forms.ClearableFileInput(attrs={'class': 'form-control-file'}))
-    address = forms.CharField(max_length=200, required=True, label='Adresse')
-    city = forms.CharField(max_length=200, required=True, label='Stadt')
-    state = forms.CharField(max_length=200, required=True, label='Bundesland')
-    zipcode = forms.CharField(max_length=200, required=True, label='Postleitzahl')
-    country = forms.CharField(max_length=200, required=True, label='Land')
+    address = forms.CharField(max_length=200, required=False, label='Adresse')
+    city = forms.CharField(max_length=200, required=False, label='Stadt')
+    state = forms.CharField(max_length=200, required=False, label='Bundesland')
+    zipcode = forms.CharField(max_length=200, required=False, label='Postleitzahl')
+    country = forms.CharField(max_length=200, required=False, label='Land')
     is_default = forms.BooleanField(required=False, label='Als Standardadresse setzen')
+    first_name = forms.CharField(max_length=30, required=False, label='Vorname')
+    last_name = forms.CharField(max_length=30, required=False, label='Nachname')
+    email = forms.EmailField(required=True)
+    username = forms.CharField(max_length=150, required=True)
 
     class Meta:
         model = Customer
-        fields = ['username', 'email', 'first_name', 'last_name', 'profile_picture', 'address', 'city', 'state', 'zipcode', 'country', 'is_default']
+        fields = ['profile_picture', 'username', 'email', 'first_name', 'last_name', 'address', 'city', 'state', 'zipcode', 'country', 'is_default']
     
     def save(self, user, commit=True):
-        # Update user fields
-        user.username = self.cleaned_data['username']
-        user.email = self.cleaned_data['email']
-        user.first_name = self.cleaned_data['first_name']
-        user.last_name = self.cleaned_data['last_name']
-        if commit:
-            user.save()
-        
         # Update customer fields
         customer = super().save(commit=False)
-        if 'profile_picture' in self.cleaned_data and self.cleaned_data['profile_picture']:
-            customer.profile_picture = self.cleaned_data['profile_picture']
         customer.user = user
         if commit:
             customer.save()
 
         # Update address fields
         address_data = {
-            'first_name': self.cleaned_data['first_name'],
-            'last_name': self.cleaned_data['last_name'],
             'address': self.cleaned_data['address'],
             'city': self.cleaned_data['city'],
             'state': self.cleaned_data['state'],

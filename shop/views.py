@@ -173,25 +173,35 @@ def regUser(request):
         
         if user_form.is_valid() and profile_form.is_valid():
             user = user_form.save()
-            customer = profile_form.save(user=user)
+            profile_form.save(user=user)
 
             login(request, user)
             messages.success(request, f'Benutzer {user.username} wurde erfolgreich erstellt.')
             return redirect('shop')
         else:
-            error_messages = []
-            if not user_form.is_valid():
-                error_messages.extend(user_form.errors.values())
-            if not profile_form.is_valid():
-                error_messages.extend(profile_form.errors.values())
-            for error in error_messages:
-                messages.error(request, error)
+            # Log errors for debugging
+            user_form_errors = user_form.errors.as_data()
+            profile_form_errors = profile_form.errors.as_data()
+            
+            # Print errors to console
+            print('User Form Errors:', user_form_errors)
+            print('Profile Form Errors:', profile_form_errors)
+            
+            # Add errors to messages
+            for field, errors in user_form_errors.items():
+                for error in errors:
+                    messages.error(request, f'Fehler im Benutzerformular ({field}): {error}')
+            for field, errors in profile_form_errors.items():
+                for error in errors:
+                    messages.error(request, f'Fehler im Profilformular ({field}): {error}')
     else:
         user_form = CustomerCreationForm()
         profile_form = ProfileForm()
 
     ctx = {'user_form': user_form, 'profile_form': profile_form, 'page': page}
     return render(request, 'shop/registration_form.html', ctx)
+
+
 
 
 @login_required
