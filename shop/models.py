@@ -45,6 +45,7 @@ class Order(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=200, null=True, default='Pending')
+    tracking_number = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return str(self.id) if self.id is not None else ''

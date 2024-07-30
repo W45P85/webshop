@@ -169,3 +169,8 @@ class AddCategoryForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['categories'].widget.attrs.update({'class': 'form-control form-control-sm'})
         self.fields['categories'].label = 'Kategorien'
+
+
+class TrackingNumberForm(forms.Form):
+    order_id = forms.UUIDField(label='Order ID')
+    tracking_number = forms.CharField(label='Tracking Number', max_length=100, required=False)

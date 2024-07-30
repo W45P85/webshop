@@ -14,8 +14,7 @@ urlpatterns = [
     path('article/<int:id>/', views.article_detail, name='article_detail'),
     path('add_article/', views.add_article, name='add_article'),
     path('add_category/', views.add_category, name='add_category'),
-    path('delete_article/<int:article_id>/', views.delete_article_confirmation, name='delete_article_confirmation'),    
-
+    path('delete_article/<int:article_id>/', views.delete_article_confirmation, name='delete_article_confirmation'),
     path('edit-article/<int:article_id>/', views.edit_article, name='edit_article'),
     
     # Rating
@@ -30,6 +29,7 @@ urlpatterns = [
     # Order
     path("bestellen/", views.bestellen, name="bestellen"),
     path("order/<uuid:id>", views.order, name="order"),
+    path('pending-orders/', views.pending_orders, name='pending_orders'),
 
     # Admin
     path('admin/', admin.site.urls, name="django-admin"),

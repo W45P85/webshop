@@ -1,0 +1,53 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+
+{% block content %}
+  <h1>Pending Orders</h1>
+
+  <form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Mark as Done</button>
+  </form>
+
+  <table class="table table-striped">
+    <thead>
+      <tr>
+        <th>Order ID</th>
+        <th>Customer Email</th>
+        <th>Order Date</th>
+        <th>Address</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for order in orders %}
+        <tr>
+          <td>{{ order.order_id }}</td>
+          <td>{{ order.customer.user.email }}</td>
+          <td>{{ order.order_date }}</td>
+          <td>
+            {% with address=order.address_set.first %}
+              {% if address %}
+                {{ address.address }}, {{ address.zipcode }}, {{ address.city }}, {{ address.country }}
+              {% else %}
+                No Address
+              {% endif %}
+            {% endwith %}
+          </td>
+          <td>
+            <!-- Button to select this order for completion -->
+            <form method="post" action="{% url 'pending_orders' %}">
+              {% csrf_token %}
+              <input type="hidden" name="order_id" value="{{ order.order_id }}">
+              {{ form.tracking_number.label_tag }}
+              {{ form.tracking_number }}
+              <button type="submit" class="btn btn-secondary">Mark as Done</button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

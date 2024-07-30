@@ -12,7 +12,7 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from datetime import timedelta
-from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm
+from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm
 from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
@@ -314,7 +314,7 @@ def bestellen(request):
             return HttpResponseBadRequest("Invalid cart total format")
 
         order.order_id = order_id
-        order.done = True
+        # order.done = True
         order.save()
 
         paypal_dict = {
@@ -624,3 +624,32 @@ def imprint(request):
 
 def privacy(request):
     return render(request, 'shop/legal/privacy.html')
+
+
+@login_required
+def pending_orders(request):
+    # Filter für Bestellungen, die "Pending" sind und eine Adresse haben
+    orders = Order.objects.filter(done=False, address__isnull=False).order_by('-order_date')
+
+    if request.method == 'POST':
+        form = TrackingNumberForm(request.POST)
+        if form.is_valid():
+            order_id = form.cleaned_data['order_id']
+            tracking_number = form.cleaned_data['tracking_number']
+
+            # Suche die Bestellung und setze den Status auf "Done" und speichere die Tracking-Nummer
+            order = get_object_or_404(Order, order_id=order_id)
+            order.done = True
+            order.tracking_number = tracking_number  # Stelle sicher, dass das Feld in deinem Modell existiert
+            order.save()
+
+            return redirect('pending_orders')  # Nach dem Abschluss auf die gleiche Seite zurückleiten
+
+    else:
+        form = TrackingNumberForm()
+
+    ctx = {
+        'orders': orders,
+        'form': form,
+    }
+    return render(request, 'shop/pending_orders.html', ctx)
