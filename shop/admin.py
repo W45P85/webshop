@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Customer, Article, Order, OrderdArticle, Adress, Category
+from .models import Customer, Article, Order, OrderdArticle, Address, Category
 
 # Inline admin descriptor for Customer model
 class CustomerInline(admin.StackedInline):
@@ -52,18 +52,16 @@ class OrderAdmin(admin.ModelAdmin):
     def get_cart_total(self, obj):
         return obj.get_cart_total
 
-    customer_email.short_description = 'Customer Email'  # Benutzerdefinierte Spaltenüberschrift
-    order_id.short_description = 'Order ID'  # Benutzerdefinierte Spaltenüberschrift
-    get_cart_total.short_description = 'Total'  # Benutzerdefinierte Spaltenüberschrift
+    customer_email.short_description = 'Customer Email'
+    order_id.short_description = 'Order ID'
+    get_cart_total.short_description = 'Total'
 
     def changelist_view(self, request, extra_context=None):
-        # Modify changelist view here if needed
         return super().changelist_view(request, extra_context=extra_context)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        # Add any additional filtering or custom queryset logic here
-        return qs
+        return qs.filter(done=True)
 
 # Define OrderdArticle admin class
 @admin.register(OrderdArticle)
@@ -97,7 +95,7 @@ class OrderdArticleAdmin(admin.ModelAdmin):
         return qs
 
 # Define Address admin class
-@admin.register(Adress)
+@admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
     list_display = ('customer_email', 'order_id', 'address', 'city', 'state', 'zipcode', 'order_date')
 

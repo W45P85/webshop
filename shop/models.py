@@ -41,9 +41,10 @@ class Order(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, blank=True, null=True)
     order_date = models.DateTimeField(auto_now_add=True)
     done = models.BooleanField(default=False, null=True, blank=False)
-    order_id = models.CharField(max_length=200, null=True)
-    created_at = models.DateTimeField(default=datetime.now)
+    order_id = models.CharField(max_length=200, null=True, unique=True, editable=False)
+    created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
+    status = models.CharField(max_length=200, null=True, default='Pending')
 
     def __str__(self):
         return str(self.id) if self.id is not None else ''
@@ -65,14 +66,12 @@ class Order(models.Model):
 
 
 class OrderdArticle(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.SET_NULL, blank=True, null=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, blank=True, null=True)
     article = models.ForeignKey(Article, on_delete=models.SET_NULL, blank=True, null=True)
-    quantity = models.IntegerField(null=True, blank=True, default=0)
+    quantity = models.PositiveIntegerField(default=0)
     order_date = models.DateTimeField(default=timezone.now)
-    # price = models.FloatField(null=True)
 
     def __str__(self):
-        print(f"Calling __str__ method of {self.__class__.__name__}")
         if self.article:
             return self.article.name
         else:
@@ -84,7 +83,7 @@ class OrderdArticle(models.Model):
         return total
 
 
-class Adress(models.Model):
+class Address(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, blank=True, null=True, related_name='addresses')
     order = models.ForeignKey(Order, on_delete=models.SET_NULL, blank=True, null=True)
     address = models.CharField(max_length=200, null=True)

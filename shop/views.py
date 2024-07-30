@@ -294,7 +294,7 @@ def bestellen(request):
                 'state': data['deliveryAddress']['country'],
                 'country': data['deliveryAddress']['country']
             }
-            address, created = Adress.objects.update_or_create(
+            address, created = Address.objects.update_or_create(
                 customer=customer, order=order, defaults=address_data
             )
 
@@ -446,11 +446,10 @@ def customer_dashboard(request):
         customer = None
 
     if customer:
-        # Filterung der Bestellungen des Kunden
         orders = Order.objects.filter(customer=customer, done=True).order_by('-order_date')
         
         # Paginator hinzufügen
-        paginator = Paginator(orders, 10)  # 10 Bestellungen pro Seite
+        paginator = Paginator(orders, 10)
         page_number = request.GET.get('page')
         try:
             page_obj = paginator.page(page_number)
@@ -476,12 +475,11 @@ def customer_dashboard(request):
             'total_orders': total_orders,
             'popular_articles': popular_articles,
             'order_status': order_status,
-            'page_obj': page_obj,  # Übergeben der paginierten Bestellungen an das Template
+            'page_obj': page_obj,
         }
 
         return render(request, 'shop/customer_dashboard.html', ctx)
     else:
-        # Handle Fall, wenn der Kunde nicht gefunden wird
         return render(request, 'shop/customer_not_found.html')
 
 

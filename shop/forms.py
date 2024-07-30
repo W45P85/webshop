@@ -94,7 +94,7 @@ class ProfileForm(forms.ModelForm):
             'country': self.cleaned_data['country'],
             'is_default': self.cleaned_data['is_default'],
         }
-        Adress.objects.update_or_create(
+        Address.objects.update_or_create(
             customer=customer,
             defaults=address_data
         )
