@@ -5,10 +5,8 @@ from django.core.exceptions import ObjectDoesNotExist
 def visitorCookieHandler(request):
     try:
         cart = json.loads(request.COOKIES.get('cart', '{}'))
-        print(f"Loaded cart from cookies: {cart}")  # Debugging-Ausgabe
     except json.JSONDecodeError:
         cart = {}
-        print("Failed to decode cart cookie, initializing empty cart.")  # Debugging-Ausgabe
 
     articles = []
     order = {'get_cart_total': 0, 'get_cart_items': 0}
@@ -60,9 +58,9 @@ def visitorOrder(request, data):
         user, user_created = User.objects.get_or_create(email=email, defaults={'username': email})
         
         if user_created:
-            user.set_unusable_password()  # Setze ein nicht verwendbares Passwort für den anonymen Benutzer
+            user.set_unusable_password()  # Set a non-usable password for anonymous users
         
-        # Setze den Namen des Users
+        # Set user's name
         if ' ' in name:
             first_name, last_name = name.split(' ', 1)
         else:
@@ -75,8 +73,22 @@ def visitorOrder(request, data):
         # Find or create customer based on user
         customer, customer_created = Customer.objects.get_or_create(user=user)
         
+        # Create the order
         order = Order.objects.create(customer=customer, done=False)
         
+        # Save the address information
+        address_data = {
+            'address': data['deliveryAddress']['address'],
+            'zipcode': data['deliveryAddress']['zip'],
+            'city': data['deliveryAddress']['city'],
+            'state': data['deliveryAddress']['country'],
+            'country': data['deliveryAddress']['country']
+        }
+        address, created = Address.objects.update_or_create(
+            customer=customer, order=order, defaults=address_data
+        )
+        
+        # Save the articles
         for article_data in articles:
             article_id = article_data['article']['id']
             quantity = article_data['quantity']
@@ -95,4 +107,5 @@ def visitorOrder(request, data):
         # Handle any exceptions gracefully and log them
         print(f"Fehler bei der Verarbeitung der Bestellung: {str(e)}")
         return None, None
+
 

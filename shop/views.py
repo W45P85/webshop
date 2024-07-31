@@ -315,12 +315,6 @@ def bestellen(request):
 
         order.order_id = order_id
         order.done = True
-        
-        # Log the order status before saving
-        logging.info(f"Updating order {order.id} with order_id: {order.order_id}. Status before save: done={order.done}")
-        order.save()
-        logging.info(f"Order {order.id} saved with status: done={order.done}")
-        
         order.save()
 
         paypal_dict = {

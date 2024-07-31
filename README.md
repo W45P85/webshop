@@ -24,4 +24,3 @@ A more or less stable interim version of DanShop is available at: [https://druko
 2. Install dependencies: `pip install -r requirements.txt`
 3. Apply migrations: `python manage.py migrate`
 4. Start the server: `python manage.py runserver`
-
