@@ -28,70 +28,56 @@ A more or less stable interim version of DanShop is available at: [https://druko
 
 ## Enhancements
 
-### 1. Sorting Views
-- Add sorting options
-- List views in Django Admin
-- Seller dashboard filters
-
-### 2. Custom Views for Sellers
-- Dedicated seller views
-- Seller-specific operations
-- Class-based or function-based views
-
-### 3. Seller Templates
-- User-friendly templates
+### 1. Seller Templates
 - Forms and data displays
-- Responsive design
 
-### 4. Order Status Sorting
+### 2. Order Status Sorting
 - Order status filtering
 - Sorting by status
 - Management views
 
-### 5. Introducing New Order Statuses
-- Pending
-- Sent
+### 3. Introducing New Order Statuses
+- Pending (already included)
+- Sent (already included)
 - Delivered
 - Cancelled
 
-### 6. Reports and Analytics
-- Administrative dashboard
+### 4. Reports and Analytics
 - Sales performance reports
-- Order statistics
 - Data visualization
 
-### 7. Inventory Management
+### 5. Inventory Management
 - Track product availability
 - Inventory fields in `Article` model
 - Views for stock levels
 
-### 8. Order Cancellations
+### 6. Order Cancellations
 - Cancel orders
 - Update order statuses
 - Customer notifications
 
-### 9. Customer Communication
+### 7. Customer Communication
 - Messaging system
 - Direct seller-customer communication
 - Automated notifications
 
-### 10. Shipping and Logistics
+### 8. Shipping and Logistics
 - Manage shipping options
 - Set shipping methods and costs
 - Print shipping labels
 - Integrate with shipping providers
 
-### 11. Promotions and Discounts
+### 9. Promotions and Discounts
 - Create discount codes
 - Manage promotions
 - Special offers and limited-time discounts
 
-### 12. Shop Settings
+### 10. Shop Settings
 - Update shop information
 - Shop description and logo
 - Configure payment methods
 
-### 13. Customer Reviews
+### 11. Customer Reviews
 - Manage customer reviews
 - Moderation capabilities
 - Respond to reviews

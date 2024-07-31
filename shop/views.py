@@ -10,7 +10,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.safestring import mark_safe
 from django.utils import timezone
-from django.db.models import Sum, Count, Q
+from django.db.models import Sum, Count, Q, F, FloatField, ExpressionWrapper
 from datetime import timedelta
 from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm
 from . models import *
@@ -26,13 +26,6 @@ def is_admin_or_seller(user):
     return user.groups.filter(name='Admins').exists() or user.groups.filter(name='Sellers').exists()
 
 def shop(request):
-    # Benutzerrollen prüfen
-    user_groups = request.user.groups.values_list('name', flat=True)
-    
-    if 'Admins' in user_groups or 'Sellers' in user_groups:
-        return redirect('seller_dashboard')
-    
-    # Für anonyme und normale Kunden
     categories = Category.objects.annotate(num_articles=Count('article')).order_by('name')
     articles = Article.objects.all()
 
@@ -157,7 +150,13 @@ def loginSeite(request):
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return redirect('shop')
+            
+            # Benutzerrollen prüfen
+            user_groups = user.groups.values_list('name', flat=True)
+            if 'Admins' in user_groups or 'Sellers' in user_groups:
+                return redirect('seller_dashboard')
+            else:
+                return redirect('shop')
         else:
             messages.error(request, 'Benutzername oder Passwort ungültig.')
 
@@ -415,7 +414,15 @@ def seller_dashboard(request):
     thirty_days_ago = timezone.now() - timedelta(days=30)
     new_customers = Customer.objects.filter(user__date_joined__gte=thirty_days_ago).count()
 
-    top_customers = Customer.objects.annotate(total_spent=Sum('order__orderdarticle__article__price') * Sum('order__orderdarticle__quantity')).order_by('-total_spent')[:5]
+    top_customers = Customer.objects.annotate(
+        total_spent=Sum(
+            ExpressionWrapper(
+                F('order__orderdarticle__quantity') * F('order__orderdarticle__article__price'),
+                output_field=FloatField()
+            )
+        )
+    ).order_by('-total_spent')[:5]
+    
     orders_per_customer = Customer.objects.annotate(order_count=Count('order')).order_by('-order_count')[:5]
     popular_categories = Category.objects.annotate(total_sold=Sum('article__orderdarticle__quantity')).order_by('-total_sold')[:5]
 
@@ -655,3 +662,9 @@ def pending_orders(request):
         'form': form,
     }
     return render(request, 'shop/pending_orders.html', ctx)
+
+
+@login_required
+@user_passes_test(is_admin_or_seller)
+def complaints(request):
+    return render(request, 'shop/complaints.html')

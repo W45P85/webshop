@@ -16,6 +16,7 @@ urlpatterns = [
     path('add_category/', views.add_category, name='add_category'),
     path('delete_article/<int:article_id>/', views.delete_article_confirmation, name='delete_article_confirmation'),
     path('edit-article/<int:article_id>/', views.edit_article, name='edit_article'),
+    path('complaints/', views.complaints, name='complaints'),
     
     # Rating
     path('ratings/', include('star_ratings.urls', namespace='ratings')),
