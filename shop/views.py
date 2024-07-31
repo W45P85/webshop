@@ -314,7 +314,13 @@ def bestellen(request):
             return HttpResponseBadRequest("Invalid cart total format")
 
         order.order_id = order_id
-        # order.done = True
+        order.done = True
+        
+        # Log the order status before saving
+        logging.info(f"Updating order {order.id} with order_id: {order.order_id}. Status before save: done={order.done}")
+        order.save()
+        logging.info(f"Order {order.id} saved with status: done={order.done}")
+        
         order.save()
 
         paypal_dict = {
@@ -629,7 +635,7 @@ def privacy(request):
 @login_required
 def pending_orders(request):
     # Filter für Bestellungen, die "Pending" sind und eine Adresse haben
-    orders = Order.objects.filter(done=False, address__isnull=False).order_by('-order_date')
+    orders = Order.objects.filter(status='Pending').order_by('-order_date')
 
     if request.method == 'POST':
         form = TrackingNumberForm(request.POST)
@@ -637,9 +643,9 @@ def pending_orders(request):
             order_id = form.cleaned_data['order_id']
             tracking_number = form.cleaned_data['tracking_number']
 
-            # Suche die Bestellung und setze den Status auf "Done" und speichere die Tracking-Nummer
-            order = get_object_or_404(Order, order_id=order_id)
-            order.done = True
+            # Suche die Bestellung und setze den Status auf "sent" und speichere die Tracking-Nummer
+            order = get_object_or_404(Order, order_id=order_id, status='Pending')
+            order.status = 'Sent'
             order.tracking_number = tracking_number  # Stelle sicher, dass das Feld in deinem Modell existiert
             order.save()
 
