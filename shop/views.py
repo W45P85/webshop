@@ -628,8 +628,7 @@ def privacy(request):
 
 @login_required
 def pending_orders(request):
-    # Filter für Bestellungen, die "Pending" sind und eine Adresse haben
-    orders = Order.objects.filter(status='Pending').order_by('-order_date')
+    orders = Order.objects.filter(status='Pending', address__isnull=False).order_by('-order_date')
 
     if request.method == 'POST':
         form = TrackingNumberForm(request.POST)
