@@ -5,9 +5,9 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
-from django.contrib.auth import authenticate, login, logout, update_session_auth_hash
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import PasswordChangeForm
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
@@ -22,9 +22,18 @@ from urllib.parse import unquote
 
 logging.basicConfig(level=logging.DEBUG)
 
+def is_admin_or_seller(user):
+    return user.groups.filter(name='Admins').exists() or user.groups.filter(name='Sellers').exists()
+
 def shop(request):
-    categories = Category.objects.annotate(num_articles=Count('article')).order_by('name')
+    # Benutzerrollen prüfen
+    user_groups = request.user.groups.values_list('name', flat=True)
     
+    if 'Admins' in user_groups or 'Sellers' in user_groups:
+        return redirect('seller_dashboard')
+    
+    # Für anonyme und normale Kunden
+    categories = Category.objects.annotate(num_articles=Count('article')).order_by('name')
     articles = Article.objects.all()
 
     category_filter = request.GET.get('category')
@@ -37,7 +46,7 @@ def shop(request):
         'categories': categories,
         'articles': articles,
     }
-    
+
     return render(request, 'shop/shop.html', ctx)
 
 
@@ -117,7 +126,6 @@ def kasse(request):
 
 def artikelBackend(request):
     data = json.loads(request.body)
-    print(f"Data received: {data}")
     articleId = data['articleId']
     action = data['action']
     customer = request.user.customer
@@ -158,8 +166,6 @@ def loginSeite(request):
 
 def logoutUser(request):
     if request.user.is_authenticated:
-        # Löschen der offene Bestellungen des aktuellen Benutzers
-        # Order.objects.filter(customer=request.user.customer, done=False).delete()
     
         logout(request)
     return redirect('shop')
@@ -380,8 +386,9 @@ def error404(request, exception):
     return render(request, 'shop/404.html')
 
 
-@login_required(login_url='login')
-def admin_dashboard(request):
+@login_required
+@user_passes_test(is_admin_or_seller)
+def seller_dashboard(request):
     total_customers = Customer.objects.count()
     total_orders = Order.objects.count()
     completed_orders = Order.objects.filter(done=True).count()
@@ -435,7 +442,7 @@ def admin_dashboard(request):
         'orders_per_month': orders_per_month,
     }
 
-    return render(request, 'shop/admin_dashboard.html', ctx)
+    return render(request, 'shop/seller_dashboard.html', ctx)
 
 
 @login_required
@@ -516,11 +523,9 @@ def search_results(request):
     return render(request, 'shop/search_results.html', ctx)
 
 
-@login_required(login_url='login')
-def add_article(request):    
-    if not request.user.is_superuser:
-        return redirect('shop')
-
+@login_required
+@user_passes_test(is_admin_or_seller)
+def add_article(request):
     if request.method == 'POST':
         form = AddArticleForm(request.POST, request.FILES)
         if form.is_valid():
@@ -542,11 +547,9 @@ def add_article(request):
     })
 
 
-@login_required(login_url='login')
+@login_required
+@user_passes_test(is_admin_or_seller)
 def edit_article(request, article_id):
-    if not request.user.is_superuser:
-        return redirect('shop')
-
     article = get_object_or_404(Article, id=article_id)
 
     if request.method == 'POST':
@@ -570,11 +573,9 @@ def edit_article(request, article_id):
     })
 
 
-@login_required(login_url='login')
+@login_required
+@user_passes_test(is_admin_or_seller)
 def add_category(request):
-    if not request.user.is_superuser:
-        return redirect('shop')
-
     form = AddCategoryForm()
     categories = Category.objects.all().order_by('name')
 
@@ -601,6 +602,7 @@ def add_category(request):
 
 
 @login_required
+@user_passes_test(is_admin_or_seller)
 def delete_article_confirmation(request, article_id):
     article = get_object_or_404(Article, id=article_id)
     if request.method == "POST":
@@ -627,6 +629,7 @@ def privacy(request):
 
 
 @login_required
+@user_passes_test(is_admin_or_seller)
 def pending_orders(request):
     orders = Order.objects.filter(status='Pending', address__isnull=False).order_by('-order_date')
 
@@ -639,10 +642,10 @@ def pending_orders(request):
             # Suche die Bestellung und setze den Status auf "sent" und speichere die Tracking-Nummer
             order = get_object_or_404(Order, order_id=order_id, status='Pending')
             order.status = 'Sent'
-            order.tracking_number = tracking_number  # Stelle sicher, dass das Feld in deinem Modell existiert
+            order.tracking_number = tracking_number
             order.save()
 
-            return redirect('pending_orders')  # Nach dem Abschluss auf die gleiche Seite zurückleiten
+            return redirect('pending_orders')
 
     else:
         form = TrackingNumberForm()

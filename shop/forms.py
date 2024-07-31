@@ -174,3 +174,14 @@ class AddCategoryForm(forms.ModelForm):
 class TrackingNumberForm(forms.Form):
     order_id = forms.UUIDField(label='Order ID')
     tracking_number = forms.CharField(label='Tracking Number', max_length=100, required=False)
+    
+    class Meta:
+        model = Order
+        fields = ['order_id', 'tracking_number']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['order_id'].widget.attrs.update({'class': 'form-control'})
+        self.fields['order_id'].label = 'Order ID'
+        self.fields['tracking_number'].widget.attrs.update({'class': 'form-control'})
+        self.fields['tracking_number'].label = 'Tracking Number'

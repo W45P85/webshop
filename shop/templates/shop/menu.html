@@ -46,7 +46,7 @@
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink">
                             {% if request.user.is_superuser %}
-                                <li><a class="dropdown-item" href="{% url 'admin_dashboard' %}">Admin Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{% url 'seller_dashboard' %}">Verkäufer Dashboard</a></li>
                             {% else %}
                                 <li><a class="dropdown-item" href="{% url 'customer_dashboard' %}">Kunden Dashboard</a></li>
                             {% endif %}

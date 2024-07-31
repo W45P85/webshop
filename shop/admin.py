@@ -19,7 +19,8 @@ class CustomUserAdmin(admin.ModelAdmin):
 # Register Customer model with its admin class
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
-    list_display = ['__str__', 'email', 'first_name', 'last_name', 'profile_picture']
+    list_display = ['__str__', 'email', 'first_name', 'last_name', 'profile_picture', 'is_seller']
+    list_editable = ['is_seller']
 
     def get_queryset(self, request):
         # Exclude customers without a linked user

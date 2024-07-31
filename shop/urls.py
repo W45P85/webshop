@@ -33,7 +33,9 @@ urlpatterns = [
 
     # Admin
     path('admin/', admin.site.urls, name="django-admin"),
-    path("admin_dashboard/", views.admin_dashboard, name="admin_dashboard"),
+    
+    # Seller
+    path("seller_dashboard/", views.seller_dashboard, name="seller_dashboard"),
 
     # Customerdashboard (normal user)
     path("customer_dashboard/", views.customer_dashboard, name="customer_dashboard"),

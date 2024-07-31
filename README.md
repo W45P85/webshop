@@ -24,3 +24,74 @@ A more or less stable interim version of DanShop is available at: [https://druko
 2. Install dependencies: `pip install -r requirements.txt`
 3. Apply migrations: `python manage.py migrate`
 4. Start the server: `python manage.py runserver`
+
+
+## Enhancements
+
+### 1. Sorting Views
+- Add sorting options
+- List views in Django Admin
+- Seller dashboard filters
+
+### 2. Custom Views for Sellers
+- Dedicated seller views
+- Seller-specific operations
+- Class-based or function-based views
+
+### 3. Seller Templates
+- User-friendly templates
+- Forms and data displays
+- Responsive design
+
+### 4. Order Status Sorting
+- Order status filtering
+- Sorting by status
+- Management views
+
+### 5. Introducing New Order Statuses
+- Pending
+- Sent
+- Delivered
+- Cancelled
+
+### 6. Reports and Analytics
+- Administrative dashboard
+- Sales performance reports
+- Order statistics
+- Data visualization
+
+### 7. Inventory Management
+- Track product availability
+- Inventory fields in `Article` model
+- Views for stock levels
+
+### 8. Order Cancellations
+- Cancel orders
+- Update order statuses
+- Customer notifications
+
+### 9. Customer Communication
+- Messaging system
+- Direct seller-customer communication
+- Automated notifications
+
+### 10. Shipping and Logistics
+- Manage shipping options
+- Set shipping methods and costs
+- Print shipping labels
+- Integrate with shipping providers
+
+### 11. Promotions and Discounts
+- Create discount codes
+- Manage promotions
+- Special offers and limited-time discounts
+
+### 12. Shop Settings
+- Update shop information
+- Shop description and logo
+- Configure payment methods
+
+### 13. Customer Reviews
+- Manage customer reviews
+- Moderation capabilities
+- Respond to reviews

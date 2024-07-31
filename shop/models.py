@@ -1,13 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from datetime import datetime
 from decimal import Decimal
 
 
 class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     profile_picture = models.ImageField(upload_to='profile_pics/', default='profile_pics/none.png')
+    is_seller = models.BooleanField(default=False)
 
     def __str__(self):
         if self.user:
