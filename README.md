@@ -1,6 +1,6 @@
 # DanShop - A Modern E-Commerce Webshop
 
-**DanShop** is a modern e-commerce Webshop currently under development. We are actively working on it daily to enhance its features and functionality. The goal is to provide an intuitive and visually appealing shopping experience.
+**DanShop** is a modern e-commerce webshop currently under development. We are actively working on it daily to enhance its features and functionality. The goal is to provide an intuitive and visually appealing shopping experience.
 
 ## Live Preview
 
