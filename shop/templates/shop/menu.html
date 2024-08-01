@@ -37,7 +37,8 @@
                 <a class="nav-link link-light p-2" href="{% url 'search' %}" title="Suche">
                     <i class="fas fa-search fa-2x"></i>
                 </a>
-        
+                
+                {% load custom_tags %}
                 <!-- User Profile or Login -->
                 {% if request.user.is_authenticated %}
                     <div class="dropdown ms-3">
@@ -45,8 +46,9 @@
                             <img src="{% if customer.profile_picture %}{{ customer.profile_picture.url }}{% else %}{% static 'img/profile_pics/none.png' %}{% endif %}" class="rounded-circle me-2" width="40" height="40" alt="Profilbild">
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuLink">
-                            {% if request.user.is_superuser %}
+                            {% if request.user.is_superuser or request.user|is_group_member:"Sellers" %}
                                 <li><a class="dropdown-item" href="{% url 'seller_dashboard' %}">Verkäufer Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{% url 'customer_dashboard' %}">Kunden Dashboard</a></li>
                             {% else %}
                                 <li><a class="dropdown-item" href="{% url 'customer_dashboard' %}">Kunden Dashboard</a></li>
                             {% endif %}
@@ -56,12 +58,10 @@
                         </ul>
                     </div>
                 {% else %}
-                    <!-- Login Button for Small Screens -->
                     <a class="btn btn-light p-2 ms-3 d-lg-none" href="{% url 'login' %}">Login</a>
-
-                    <!-- Login Button for Large Screens -->
                     <a class="btn btn-light p-2 ms-3 d-none d-lg-block" href="{% url 'login' %}">Login</a>
                 {% endif %}
+
             </div>
         </div>        
     </div>

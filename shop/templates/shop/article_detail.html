@@ -1,6 +1,7 @@
 {% extends "shop/index.html" %}
 {% load static %}
 {% load ratings %}
+{% load custom_tags %}
 
 {% block content %}
 {{ article.article.img.url }}
@@ -23,7 +24,13 @@
                     <h2 class="mt-5">
                        {{ article.price }} € <small></small>
                     </h2>
-                    <button data-artikel={{article.id}} data-action="bestellen" class="btn btn-outline-danger warenkorb-bestellen">Warenkorb hinzufügen</button>
+                    {% if request.user.is_superuser or request.user|is_group_member:"Sellers" %}
+                        <button data-artikel={{article.id}} data-action="bestellen" class="btn btn-outline-success warenkorb-bestellen">Warenkorb hinzufügen</button>
+                        <a href="{% url 'edit_article' article.id %}" class="btn btn-primary">Bearbeiten</a>
+                        <a href="{% url 'delete_article_confirmation' article.id %}" class="btn btn-danger">Löschen</a>
+                    {% else %}
+                        <button data-artikel={{article.id}} data-action="bestellen" class="btn btn-outline-success warenkorb-bestellen">Warenkorb hinzufügen</button>
+                    {% endif %}
                     <h3 class="box-title mt-5">Kategorie</h3>
                     <ul class="list-unstyled">
                         <li><i></i>{{ article.category }}</li>

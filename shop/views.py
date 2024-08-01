@@ -25,6 +25,7 @@ logging.basicConfig(level=logging.DEBUG)
 def is_admin_or_seller(user):
     return user.groups.filter(name='Admins').exists() or user.groups.filter(name='Sellers').exists()
 
+
 def shop(request):
     categories = Category.objects.annotate(num_articles=Count('article')).order_by('name')
     articles = Article.objects.all()
@@ -388,29 +389,23 @@ def error404(request, exception):
 @login_required
 @user_passes_test(is_admin_or_seller)
 def seller_dashboard(request):
+    # Berechnungen und Daten für das Dashboard
     total_customers = Customer.objects.count()
     total_orders = Order.objects.count()
     completed_orders = Order.objects.filter(done=True).count()
     pending_orders = Order.objects.filter(done=False).count()
-    
-    # Alle offenen Bestellungen sortiert nach Bestelldatum in absteigender Reihenfolge abrufen
-    open_orders = Order.objects.filter(done=False).order_by('-order_date')
 
-    # Die letzte Bestellung aus der Liste entfernen
+    open_orders = Order.objects.filter(done=False).order_by('-order_date')
     if open_orders.exists():
         open_orders = open_orders.exclude(pk=open_orders.first().pk)
 
-    # Gesamtumsatz berechnen
     total_revenue = OrderdArticle.objects.aggregate(total_revenue=Sum('article__price'))['total_revenue']
+    total_items_sold = OrderdArticle.objects.aggregate(total_items_sold=Sum('quantity'))['total_items_sold']
     if total_revenue is None:
         total_revenue = 0
-
-    # Gesamtanzahl verkaufter Artikel berechnen
-    total_items_sold = OrderdArticle.objects.aggregate(total_items_sold=Sum('quantity'))['total_items_sold']
     if total_items_sold is None:
         total_items_sold = 0
 
-    # Anzahl neuer Kunden in den letzten 30 Tagen berechnen
     thirty_days_ago = timezone.now() - timedelta(days=30)
     new_customers = Customer.objects.filter(user__date_joined__gte=thirty_days_ago).count()
 
@@ -431,6 +426,9 @@ def seller_dashboard(request):
     orders_per_week = Order.objects.annotate(week=TruncWeek('order_date')).values('week').annotate(total=Count('id')).order_by('-week')
     orders_per_month = Order.objects.annotate(month=TruncMonth('order_date')).values('month').annotate(total=Count('id')).order_by('-month')
 
+    # Hinzufügen einer Variable zur Template-Context
+    is_seller = request.user.groups.filter(name='Sellers').exists()
+
     ctx = {
         'open_orders': open_orders,
         'total_customers': total_customers,
@@ -447,6 +445,7 @@ def seller_dashboard(request):
         'orders_per_day': orders_per_day,
         'orders_per_week': orders_per_week,
         'orders_per_month': orders_per_month,
+        'is_seller': is_seller
     }
 
     return render(request, 'shop/seller_dashboard.html', ctx)
