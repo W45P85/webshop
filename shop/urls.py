@@ -16,7 +16,10 @@ urlpatterns = [
     path('add_category/', views.add_category, name='add_category'),
     path('delete_article/<int:article_id>/', views.delete_article_confirmation, name='delete_article_confirmation'),
     path('edit-article/<int:article_id>/', views.edit_article, name='edit_article'),
-    path('complaints/', views.complaints, name='complaints'),
+    path('customer_complaints/', views.customer_complaints, name='customer_complaints'),
+    path('search-order/', views.search_order, name='search_order'),
+    path('complaint-form/<uuid:order_id>/', views.complaint_form, name='complaint_form'),
+    path('mark-delivered/', views.mark_delivered, name='mark_delivered'),
     
     # Rating
     path('ratings/', include('star_ratings.urls', namespace='ratings')),

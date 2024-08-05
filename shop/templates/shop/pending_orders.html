@@ -7,105 +7,207 @@
         <!-- Überschrift und Suchformular -->
         <div class="col-12 mb-4">
             <div class="shadow p-3">
-                <h1 class="fw-bold">Offene Bestellungen</h1>
-                <p class="text-muted mb-4">Hier findest du alle offenen Bestellungen. Mit dem Zuweisen einer Tracking-ID wird die Bestellung abgeschlossen.</p>
-                <h5>Schnellzugriff</h5>
+                <h1 class="fw-bold">Bestellstatus Übersicht</h1>
+                <p class="text-muted mb-4">Hier findest du alle Bestellungen nach Status aufgelistet. Mit dem Zuweisen einer Tracking-ID wird der Status auf "Dispatched" gesetzt.</p>
+                <h2>Schnellpflege</h2>
+                <p class=""><strong>Sendungsverfolgung</strong>:</p>
                 <form method="post" class="mb-4">
                     {% csrf_token %}
                     {{ form.as_p }}
-                    <button type="submit" class="btn btn-primary">Bestellung abschließen</button>
+                    <button type="submit" class="btn btn-primary">Tracking-ID einfügen</button>
                 </form>
             </div>
         </div>
 
-        <!-- Tabelle für große Bildschirme -->
-        <div class="col-12">
+        <!-- Tabelle für offene Bestellungen -->
+        <div class="col-12 mb-4">
             <div class="shadow p-3">
-                <div class="d-none d-lg-block">
-                    <h5>Vollständige Liste</h5>
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Bestellnummer</th>
-                                    <th scope="col">Kunden Email</th>
-                                    <th scope="col">Bestelldatum</th>
-                                    <th scope="col">Adresse</th>
-                                    <th scope="col">Aktionen</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for order in orders %}
-                                <tr>
-                                    <td><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></td>
-                                    <td>{{ order.customer.user.email }}</td>
-                                    <td>{{ order.order_date }}</td>
-                                    <td>
-                                        {% with address=order.address_set.first %}
-                                            {% if address %}
-                                                {{ address.address }}<br>{{ address.zipcode }}<br>{{ address.city }}<br>{{ address.country }}
-                                            {% else %}
-                                                No Address
-                                            {% endif %}
-                                        {% endwith %}
-                                    </td>
-                                    <td>
-                                        <!-- Button to select this order for completion -->
-                                        <form method="post" action="{% url 'pending_orders' %}" class="d-inline">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="order_id" value="{{ order.order_id }}">
-                                            {{ form.tracking_number.label_tag }}
-                                            {{ form.tracking_number }}
-                                            <button type="submit" class="btn btn-secondary">Bestellung abschließen</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Kartenansicht für kleine Bildschirme -->
-                <div class="d-block d-lg-none">
-                    {% if orders %}
-                        <div class="row">
-                            {% for order in orders %}
-                            <div class="col-12 mb-4">
-                                <div class="card h-100">
-                                    <div class="card-body">
-                                        <h5 class="card-title"><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></h5>
-                                        <p class="card-text"><strong>Customer Email:</strong> {{ order.customer.user.email }}</p>
-                                        <p class="card-text"><strong>Order Date:</strong> {{ order.order_date }}</p>
-                                        <p class="card-text"><strong>Address:</strong> 
-                                            {% with address=order.address_set.first %}
-                                                {% if address %}
-                                                    {{ address.address }}, {{ address.zipcode }}, {{ address.city }}, {{ address.country }}
-                                                {% else %}
-                                                    No Address
-                                                {% endif %}
-                                            {% endwith %}
-                                        </p>
-                                        <form method="post" action="{% url 'pending_orders' %}" class="d-inline">
-                                            {% csrf_token %}
-                                            <input type="hidden" name="order_id" value="{{ order.order_id }}">
-                                            {{ form.tracking_number.label_tag }}
-                                            {{ form.tracking_number }}
-                                            <button type="submit" class="btn btn-secondary">Mark as Done</button>
-                                        </form>
-                                    </div>
-                                </div>
-                            </div>
+                <h2 class="fw-bold">Offene Bestellungen - Status: Pending</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">Bestellnummer</th>
+                                <th scope="col">Kunden Email</th>
+                                <th scope="col">Bestelldatum</th>
+                                <th scope="col">Adresse</th>
+                                <th scope="col">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in pending_orders %}
+                            <tr>
+                                <td><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></td>
+                                <td>{{ order.customer.user.email }}</td>
+                                <td>{{ order.order_date }}</td>
+                                <td>
+                                    {% with address=order.address_set.first %}
+                                        {% if address %}
+                                            {{ address.address }}<br>{{ address.zipcode }}<br>{{ address.city }}<br>{{ address.country }}
+                                        {% else %}
+                                            No Address
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    <form method="post" action="{% url 'pending_orders' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="order_id" value="{{ order.order_id }}">
+                                        {{ form.tracking_number.label_tag }}
+                                        {{ form.tracking_number }}
+                                        <button type="submit" class="btn btn-primary">Eintragen</button>
+                                    </form>
+                                </td>
+                            </tr>
                             {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="alert alert-info" role="alert">
-                            No pending orders available.
-                        </div>
-                    {% endif %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
+
+        <!-- Tabelle für versendete Bestellungen -->
+        <div class="col-12 mb-4">
+            <div class="shadow p-3">
+                <h2 class="fw-bold">Versendete Bestellungen - Status: Dispatched</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">Bestellnummer</th>
+                                <th scope="col">Kunden Email</th>
+                                <th scope="col">Versanddatum</th>
+                                <th scope="col">Adresse</th>
+                                <th scope="col">Tracking Nummer</th>
+                                <th scope="col">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in dispatched_orders %}
+                            <tr>
+                                <td><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></td>
+                                <td>{{ order.customer.user.email }}</td>
+                                <td>{{ order.order_date }}</td>
+                                <td>
+                                    {% with address=order.address_set.first %}
+                                        {% if address %}
+                                            {{ address.address }}<br>{{ address.zipcode }}<br>{{ address.city }}<br>{{ address.country }}
+                                        {% else %}
+                                            No Address
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>{{ order.tracking_number }}</td>
+                                <td>
+                                    <form method="post" action="{% url 'mark_delivered' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="order_id" value="{{ order.order_id }}">
+                                        <button type="submit" class="btn btn-primary">Geliefert</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabelle für gelieferte Bestellungen -->
+        <div class="col-12 mb-4">
+            <div class="shadow p-3">
+                <h2 class="fw-bold">Gelieferte Bestellungen - Status: Delivered</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">Bestellnummer</th>
+                                <th scope="col">Kunden Email</th>
+                                <th scope="col">Lieferdatum</th>
+                                <th scope="col">Adresse</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in delivered_orders %}
+                            <tr>
+                                <td><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></td>
+                                <td>{{ order.customer.user.email }}</td>
+                                <td>{{ order.order_date }}</td>
+                                <td>
+                                    {% with address=order.address_set.first %}
+                                        {% if address %}
+                                            {{ address.address }}<br>{{ address.zipcode }}<br>{{ address.city }}<br>{{ address.country }}
+                                        {% else %}
+                                            No Address
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabelle für reklamierten Bestellungen -->
+        <div class="col-12 mb-4">
+            <div class="shadow p-3">
+                <h2 class="fw-bold">Reklamierte Bestellungen - Status: Complained</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">Bestellnummer</th>
+                                <th scope="col">Kunden Email</th>
+                                <th scope="col">Reklamationsdatum</th>
+                                <th scope="col">Reklamationsgrund</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in complained_orders %}
+                            <tr>
+                                <td><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></td>
+                                <td>{{ order.customer.user.email }}</td>
+                                <td>{{ order.order_date }}</td>
+                                <td>{{ order.tracking_number }}</td> <!-- Hier könntest du den Grund für die Reklamation speichern -->
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabelle für abgebrochene Bestellungen -->
+        <div class="col-12 mb-4">
+            <div class="shadow p-3">
+                <h2 class="fw-bold">Abgebrochene Bestellungen - Status: Cancelled</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">Bestellnummer</th>
+                                <th scope="col">Kunden Email</th>
+                                <th scope="col">Stornierungsdatum</th>
+                                <th scope="col">Stornierungsgrund</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in cancelled_orders %}
+                            <tr>
+                                <td><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></td>
+                                <td>{{ order.customer.user.email }}</td>
+                                <td>{{ order.order_date }}</td>
+                                <td>{{ order.tracking_number }}</td> <!-- Hier könntest du den Grund für die Stornierung speichern -->
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 {% endblock %}

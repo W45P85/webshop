@@ -1,5 +1,6 @@
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
+from django.core.files.images import get_image_dimensions
 from django import forms
 from .models import *
 
@@ -172,12 +173,8 @@ class AddCategoryForm(forms.ModelForm):
 
 
 class TrackingNumberForm(forms.Form):
-    order_id = forms.UUIDField(label='Order ID')
+    order_id = forms.CharField(label='Berstellnummer', required=False)
     tracking_number = forms.CharField(label='Tracking Number', max_length=100, required=False)
-    
-    class Meta:
-        model = Order
-        fields = ['order_id', 'tracking_number']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -185,3 +182,40 @@ class TrackingNumberForm(forms.Form):
         self.fields['order_id'].label = 'Order ID'
         self.fields['tracking_number'].widget.attrs.update({'class': 'form-control'})
         self.fields['tracking_number'].label = 'Tracking Number'
+
+
+class OrderSearchForm(forms.Form):
+    search_term = forms.CharField(required=False, label='Suche Bestellungen', max_length=100)
+    
+    def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.fields['search_term'].widget.attrs.update({'class': 'form-control'})
+
+
+class ComplaintForm(forms.ModelForm):
+    reason = forms.CharField(label='Reklamationsgrund', widget=forms.Textarea(attrs={'rows': 3}), required=True)
+    image = forms.ImageField(label='Bild der Reklamation', required=False)
+    
+    class Meta:
+        model = Complaint
+        fields = ['reason', 'image']
+        widgets = {
+            'reason': forms.Textarea(attrs={'rows': 4}),
+            'image': forms.FileInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['image'].widget.attrs.update({'class': 'form-control'})
+        self.fields['image'].label = 'Bild der Reklamation'
+        self.fields['reason'].widget.attrs.update({'class': 'form-control'})
+        self.fields['reason'].label = 'Reklamationsgrund'
+
+    def clean_image(self):
+        image = self.cleaned_data.get('image')
+        if image:
+            # Optional: Validierung für Bildgröße
+            width, height = get_image_dimensions(image)
+            if width > 2000 or height > 2000:
+                raise forms.ValidationError('Das Bild ist zu groß. Maximal 2000x2000 Pixel.')
+        return image

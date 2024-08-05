@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
 from decimal import Decimal
+import uuid
 
 
 class Customer(models.Model):
@@ -14,6 +15,9 @@ class Customer(models.Model):
             return self.user.username
         else:
             return 'Unbekannter Kunde'
+
+    def get_orders(self):
+        return Order.objects.filter(customer=self)
 
     @property
     def email(self):
@@ -38,14 +42,24 @@ class Article(models.Model):
         return self.name
 
 class Order(models.Model):
-    customer = models.ForeignKey(Customer, on_delete=models.SET_NULL, blank=True, null=True)
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Dispatched', 'dispatched'),
+        ('Delivered', 'delivered'),
+        ('complained', 'complained'),
+        ('Completed', 'Completed'),
+        ('Cancelled', 'Cancelled'),
+    ]
+    
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, blank=True, null=True, db_index=True)
     order_date = models.DateTimeField(auto_now_add=True)
     done = models.BooleanField(default=False, null=True, blank=False)
-    order_id = models.CharField(max_length=200, null=True, unique=True, editable=False)
+    order_id = models.CharField(max_length=100, null=True, unique=True, editable=False, default=uuid.uuid4)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=200, null=True, default='Pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, default='Pending')
     tracking_number = models.CharField(max_length=100, blank=True, null=True)
+    shipping_provider = models.CharField(max_length=100, blank=True, null=True)
 
     def __str__(self):
         return str(self.id) if self.id is not None else ''
@@ -63,6 +77,12 @@ class Order(models.Model):
         ordered_articles = self.orderdarticle_set.all()
         cart_items = sum([ordered_article.quantity for ordered_article in ordered_articles])
         return cart_items
+    
+    def get_ordered_articles(self):
+        return self.orderdarticle_set.all()
+    
+    def address_set(self):
+        return self.address_set.all()
 
 
 
@@ -106,3 +126,25 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Complaint(models.Model):
+    STATUS_CHOICES = [
+        ('Received', 'Received'),
+        ('In Review', 'In Review'),
+        ('Resolved', 'Resolved'),
+        ('Rejected', 'Rejected'),
+    ]
+    
+    customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True)
+    order = models.ForeignKey('Order', on_delete=models.SET_NULL, null=True, blank=True)
+    reason = models.TextField(default='No reason provided')
+    articles = models.ManyToManyField('Article', blank=True)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Received')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    image = models.ImageField(upload_to='complaint_images/', null=True, blank=True)
+
+    def __str__(self):
+        return f'Reklamation {self.id} - {", ".join(article.name for article in self.articles.all()) if self.articles.exists() else "Unbekannte Artikel"}'

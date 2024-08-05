@@ -1,0 +1,14 @@
+{% extends "shop/index.html" %}
+{% block content %}
+    <div class="container mt-4">
+        <h1 class="fw-bold">Bestellung suchen</h1>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="search_id" class="form-label">Bestellnummer eingeben</label>
+                <input type="text" class="form-control" id="search_id" name="search_id" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Suchen</button>
+        </form>
+    </div>
+{% endblock %}

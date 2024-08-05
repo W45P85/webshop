@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
-from .models import Customer, Article, Order, OrderdArticle, Address, Category
+from .models import Customer, Article, Order, OrderdArticle, Address, Category, Complaint
 from .forms import TrackingNumberForm
 
 # Inline admin descriptor for Customer model
@@ -147,3 +147,21 @@ class CategoryAdmin(admin.ModelAdmin):
 class ArticleAdmin(admin.ModelAdmin):
     list_display = ('name', 'description', 'price', 'category')
     list_filter = ('category',)
+
+@admin.register(Complaint)
+class ComplaintsAdmin(admin.ModelAdmin):
+    list_display = ('customer_email', 'order_id', 'order_date')
+    search_fields = ('customer__user__email', 'description')
+
+    def customer_email(self, obj):
+        return obj.customer.user.email if obj.customer and obj.customer.user else "Unknown"
+
+    def order_id(self, obj):
+        return obj.order.order_id if obj.order else None
+
+    def order_date(self, obj):
+        return obj.order.order_date if obj.order else None
+
+    customer_email.short_description = 'Kunden E-Mail'
+    order_id.short_description = 'Order ID'
+    order_date.short_description = 'Bestelldatum'

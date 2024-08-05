@@ -12,7 +12,7 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q, F, FloatField, ExpressionWrapper
 from datetime import timedelta
-from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm
+from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm, ComplaintForm, OrderSearchForm
 from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
 from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
@@ -637,27 +637,36 @@ def privacy(request):
 @login_required
 @user_passes_test(is_admin_or_seller)
 def pending_orders(request):
-    orders = Order.objects.filter(status='Pending', address__isnull=False).order_by('-order_date')
+    # Abfragen für verschiedene Bestellstatus
+    pending_orders = Order.objects.filter(status='Pending', address__isnull=False).order_by('-order_date')
+    dispatched_orders = Order.objects.filter(status='Dispatched').order_by('-order_date')
+    delivered_orders = Order.objects.filter(status='Delivered').order_by('-order_date')
+    complained_orders = Order.objects.filter(status='Complained').order_by('-order_date')
+    cancelled_orders = Order.objects.filter(status='Cancelled').order_by('-order_date')
 
+    # Formular zum Setzen des Status auf "dispatched" und Speichern der Tracking-Nummer
     if request.method == 'POST':
         form = TrackingNumberForm(request.POST)
         if form.is_valid():
             order_id = form.cleaned_data['order_id']
             tracking_number = form.cleaned_data['tracking_number']
 
-            # Suche die Bestellung und setze den Status auf "sent" und speichere die Tracking-Nummer
+            # Suche die Bestellung und setze den Status auf "dispatched" und speichere die Tracking-Nummer
             order = get_object_or_404(Order, order_id=order_id, status='Pending')
-            order.status = 'Sent'
+            order.status = 'Dispatched'
             order.tracking_number = tracking_number
             order.save()
 
             return redirect('pending_orders')
-
     else:
         form = TrackingNumberForm()
 
     ctx = {
-        'orders': orders,
+        'pending_orders': pending_orders,
+        'dispatched_orders': dispatched_orders,
+        'delivered_orders': delivered_orders,
+        'complained_orders': complained_orders,
+        'cancelled_orders': cancelled_orders,
         'form': form,
     }
     return render(request, 'shop/pending_orders.html', ctx)
@@ -665,5 +674,108 @@ def pending_orders(request):
 
 @login_required
 @user_passes_test(is_admin_or_seller)
-def complaints(request):
-    return render(request, 'shop/complaints.html')
+def mark_delivered(request):
+    if request.method == 'POST':
+        order_id = request.POST.get('order_id')
+        order = get_object_or_404(Order, order_id=order_id, status='Dispatched')
+        order.status = 'Delivered'
+        order.save()
+        return redirect('pending_orders')  # Oder eine andere URL, falls du die Ansicht ändern möchtest
+    return redirect('pending_orders')  # Fallback, falls keine POST-Anfrage vorliegt
+
+
+@login_required
+def customer_complaints(request):
+    selected_order = None
+    articles = OrderdArticle.objects.none()
+
+    if request.method == 'POST':
+        form = ComplaintForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            complaint = form.save(commit=False)
+            order_id = request.POST.get('order_id')
+            print("POST-Daten:", request.POST)
+            print("Bestell-ID:", order_id)
+
+            if order_id:
+                try:
+                    selected_order = Order.objects.get(id=order_id, customer__user=request.user)
+                    complaint.order = selected_order
+                    complaint.customer = request.user.customer
+                except Order.DoesNotExist:
+                    complaint.order = None
+                    complaint.customer = None
+
+            # Debugging-Ausgabe: Überprüfen der Artikel im Formular
+            print("Artikel im Formular:", form.cleaned_data.get('articles'))
+
+            complaint.save()
+            form.save_m2m()
+
+            # Debugging-Ausgabe: Überprüfen der gespeicherten Artikel
+            print("Reklamation gespeichert mit Artikeln:")
+            for article in complaint.articles.all():
+                print(f"- {article.name}")
+
+            return redirect('customer_complaints')
+    else:
+        search_form = OrderSearchForm(request.GET)
+        orders = Order.objects.none()
+
+        if search_form.is_valid():
+            search_term = search_form.cleaned_data.get('search_term', '')
+            orders = Order.objects.filter(order_id__icontains=search_term, customer__user=request.user)
+
+            if orders.exists():
+                selected_order = orders.first()
+                articles = selected_order.orderdarticle_set.all()
+
+        form = ComplaintForm(user=request.user, selected_order=selected_order)
+
+    complaints = Complaint.objects.filter(order__in=orders).prefetch_related('articles')
+
+    return render(request, 'shop/customer_complaints.html', {
+        'form': form,
+        'search_form': search_form,
+        'complaints': complaints,
+        'articles': articles,
+        'selected_order': selected_order,
+    })
+
+
+@login_required
+def search_order(request):
+    if request.method == 'POST':
+        search_id = request.POST.get('search_id')
+        order = get_object_or_404(Order, order_id=search_id)
+        return render(request, 'shop/complaint_form.html', {'order': order, 'form': ComplaintForm()})
+    return render(request, 'shop/search_order.html')
+
+
+@login_required
+def complaint_form(request, order_id):
+    order = get_object_or_404(Order, order_id=order_id)
+
+    if request.method == 'POST':
+        form = ComplaintForm(request.POST, request.FILES)
+        if form.is_valid():
+            complaint = form.save(commit=False)
+            complaint.order = order
+            complaint.save()
+            
+            # Update order status
+            order.status = 'Complained'
+            order.save()
+
+            return redirect('order', id=order.order_id)
+    else:
+        form = ComplaintForm()
+
+    # Retrieve ordered articles
+    ordered_articles = OrderdArticle.objects.filter(order=order)
+
+    return render(request, 'shop/complaint_form.html', {
+        'form': form,
+        'order': order,
+        'ordered_articles': ordered_articles
+    })
