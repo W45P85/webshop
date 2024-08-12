@@ -159,6 +159,7 @@ class Complaint(models.Model):
         ('Rejected', 'Rejected'),
     ]
     
+    complaint_id = models.CharField(max_length=50, blank=True, null=True)
     customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True)
     order = models.OneToOneField(Order, on_delete=models.CASCADE, null=True, blank=True)
     reason = models.TextField(default='No reason provided')
@@ -170,3 +171,23 @@ class Complaint(models.Model):
 
     def __str__(self):
         return f'Reklamation {self.id} - {", ".join(article.name for article in self.articles.all()) if self.articles.exists() else "Unbekannte Artikel"}'
+    
+    def save(self, *args, **kwargs):
+        if not self.complaint_id:
+            self.complaint_id = self.generate_complaint_id()
+        super().save(*args, **kwargs)
+
+    def generate_complaint_id(self):
+        today = timezone.now()
+        date_str = today.strftime("%Y-%m-%d")  # Formatierung als YYYY-MM-DD für URL-Kompatibilität
+        last_complaint = Complaint.objects.filter(created_at__date=today.date()).order_by('-created_at').first()
+        if last_complaint and last_complaint.complaint_id:
+            # Extrahiere die letzte Nummer aus der complaint_id
+            try:
+                last_number = int(last_complaint.complaint_id.split('-')[-1].lstrip('0') or '0')
+            except ValueError:
+                last_number = 0
+            new_number = last_number + 1
+        else:
+            new_number = 1
+        return f"{date_str}-R-{new_number:04d}"

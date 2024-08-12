@@ -20,6 +20,9 @@
                         </div>
                         <div class="col-md-6">
                             <p><strong>Bestellstatus:</strong> {{ order.status }}</p>
+                            {% if complaint.complaint_id %}
+                                <p style="color: red"><strong>Reklamation-ID: </strong><a style="color: red" href="{% url 'complaint_detail' complaint.complaint_id %}">{{ complaint.complaint_id }}</a></strong></p>
+                            {% endif %}
                             <p><strong>Tracking-ID:</strong> {{ order.tracking_number }}</p>
                             <p><strong>Versanddienstleister:</strong> {{ order.shipping_provider }}</p>
                             <p><strong>Lieferadresse:</strong></p>

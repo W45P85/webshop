@@ -359,17 +359,18 @@ def bestellen(request):
 def order(request, id):
     try:
         order = Order.objects.get(order_id=id)
+        complaint = Complaint.objects.filter(order=order).first()
     except Order.DoesNotExist:
         messages.error(request, "Bestellung nicht gefunden.")
         return redirect('shop')
 
     if request.user.is_superuser or is_admin_or_seller(request.user):
         articles = order.orderdarticle_set.all()
-        ctx = {'articles': articles, 'order': order}
+        ctx = {'articles': articles, 'order': order, 'complaint': complaint}
         return render(request, 'shop/order.html', ctx)
     elif order.customer and hasattr(order.customer, 'user') and request.user == order.customer.user:
         articles = order.orderdarticle_set.all()
-        ctx = {'articles': articles, 'order': order}
+        ctx = {'articles': articles, 'order': order, 'complaint': complaint}
         return render(request, 'shop/order.html', ctx)
     else:
         if not order.customer:
@@ -641,7 +642,7 @@ def pending_orders(request):
     pending_orders = Order.objects.filter(status='Pending', address__isnull=False).order_by('-order_date')
     dispatched_orders = Order.objects.filter(status='Dispatched').order_by('-order_date')
     delivered_orders = Order.objects.filter(status='Delivered').order_by('-order_date')
-    complained_orders = Order.objects.filter(status='Complained').order_by('-order_date')
+    complained_orders = Complaint.objects.select_related('order__customer').filter(order__status='Complained').order_by('-created_at')
     cancelled_orders = Order.objects.filter(status='Cancelled').order_by('-order_date')
 
     # Formular zum Setzen des Status auf "dispatched" und Speichern der Tracking-Nummer
@@ -781,7 +782,7 @@ def complaint_form(request, order_id):
             # Setzen der Artikel auf die Reklamation
             complaint.articles.set(article_ids)
             
-            messages.success(request, "Reklamation erfolgreich eingereicht.")
+            messages.success(request, "Reklamation erfolgreich mit ID " + str(complaint.id) + " eingereicht.")
             return redirect('order', id=order.order_id)
     else:
         form = ComplaintForm()
@@ -792,5 +793,17 @@ def complaint_form(request, order_id):
     return render(request, 'shop/complaint_form.html', {
         'form': form,
         'order': order,
-        'ordered_articles': ordered_articles
+        'ordered_articles': ordered_articles,
     })
+
+
+def complaint_detail(request, complaint_id):
+    complaint = get_object_or_404(Complaint, complaint_id=complaint_id)
+    order = get_object_or_404(Order, id=complaint.order.id)
+    
+    ctx = {
+        'complaint': complaint,
+        'order': order
+    }
+    
+    return render(request, 'shop/complaint_detail.html', ctx)

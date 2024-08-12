@@ -158,6 +158,7 @@
                     <table class="table table-striped table-hover">
                         <thead>
                             <tr>
+                                <th scope="col">Reklamations-ID</th>
                                 <th scope="col">Bestellnummer</th>
                                 <th scope="col">Kunden Email</th>
                                 <th scope="col">Reklamationsdatum</th>
@@ -165,10 +166,11 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for order in complained_orders %}
+                            {% for complaint in complained_orders %}
                             <tr>
-                                <td><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></td>
-                                <td>{{ order.customer.user.email }}</td>
+                                <td>{{ complaint.complaint_id }}</td>
+                                <td><a href="{% url 'order' id=complaint.order.order_id %}">{{ complaint.order.order_id }}</a></td>
+                                <td>{{ complaint.order.customer.user.email }}</td>
                                 <td>{{ complaint.created_at }}</td>
                                 <td>{{ complaint.reason }}</td>
                             {% endfor %}
@@ -177,6 +179,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- Tabelle für abgebrochene Bestellungen -->
         <div class="col-12 mb-4">

@@ -209,6 +209,7 @@ class ComplaintForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.user = kwargs.pop('user', None)
         self.selected_order = kwargs.pop('selected_order', None)
+
         super().__init__(*args, **kwargs)
         self.fields['image'].widget.attrs.update({'class': 'form-control'})
         self.fields['image'].label = 'Bild der Reklamation'
