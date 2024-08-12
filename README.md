@@ -4,7 +4,7 @@
 
 ## Live Preview
 
-A more or less stable interim version of DanShop is available at: [https://drukober.pythonanywhere.com/](https://drukober.pythonanywhere.com/). Please note that this version may have some experimental features and is subject to ongoing changes.
+A relatively stable interim version of DanShop is available at [https://drukober.pythonanywhere.com/](https://drukober.pythonanywhere.com/). Please note that this version may include experimental features and is subject to ongoing changes. It is also recommended to download the repository, as the online version might not always be up-to-date.
 
 ## Features
 
