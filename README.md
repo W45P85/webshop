@@ -26,58 +26,39 @@ A more or less stable interim version of DanShop is available at: [https://druko
 4. Start the server: `python manage.py runserver`
 
 
-## Enhancements
+### Enhancements
 
-### 1. Seller Templates
-- Forms and data displays
-
-### 2. Order Status Sorting
-- Order status filtering
-- Sorting by status
-- Management views
-
-### 3. Introducing New Order Statuses
-- Pending (already included)
-- Sent (already included)
-- Delivered
-- Cancelled
-
-### 4. Reports and Analytics
+#### 1. Reports and Analytics
 - Sales performance reports
 - Data visualization
 
-### 5. Inventory Management
+#### 2. Inventory Management
 - Track product availability
 - Inventory fields in `Article` model
 - Views for stock levels
 
-### 6. Order Cancellations
-- Cancel orders
-- Update order statuses
-- Customer notifications
-
-### 7. Customer Communication
+#### 3. Customer Communication
 - Messaging system
 - Direct seller-customer communication
 - Automated notifications
 
-### 8. Shipping and Logistics
+#### 4. Shipping and Logistics
 - Manage shipping options
 - Set shipping methods and costs
 - Print shipping labels
 - Integrate with shipping providers
 
-### 9. Promotions and Discounts
+#### 5. Promotions and Discounts
 - Create discount codes
 - Manage promotions
 - Special offers and limited-time discounts
 
-### 10. Shop Settings
+#### 6. Shop Settings
 - Update shop information
 - Shop description and logo
 - Configure payment methods
 
-### 11. Customer Reviews
+#### 7. Customer Reviews
 - Manage customer reviews
 - Moderation capabilities
 - Respond to reviews

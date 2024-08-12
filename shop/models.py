@@ -1,8 +1,24 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.forms import ValidationError
 from django.utils import timezone
 from decimal import Decimal
 import uuid
+from PIL import Image
+
+def validate_image(image):
+    max_size_mb = 5  # Maximale Größe in MB
+    if image.size > max_size_mb * 1024 * 1024:
+        raise ValidationError(f"Das Bild darf nicht größer als {max_size_mb} MB sein.")
+    
+    try:
+        img = Image.open(image)
+        img_format = img.format.lower()
+        allowed_formats = ['jpeg', 'png', 'gif']
+        if img_format not in allowed_formats:
+            raise ValidationError(f"Nur die Formate {', '.join(allowed_formats)} sind erlaubt.")
+    except IOError:
+        raise ValidationError("Die Datei ist kein Bild oder ist beschädigt.")
 
 
 class Customer(models.Model):
@@ -41,8 +57,10 @@ class Article(models.Model):
     def __str__(self):
         return self.name
 
+
 class Order(models.Model):
     STATUS_CHOICES = [
+        ('----', '----'),
         ('Pending', 'Pending'),
         ('Dispatched', 'dispatched'),
         ('Delivered', 'delivered'),
@@ -54,7 +72,7 @@ class Order(models.Model):
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, blank=True, null=True, db_index=True)
     order_date = models.DateTimeField(auto_now_add=True)
     done = models.BooleanField(default=False, null=True, blank=False)
-    order_id = models.CharField(max_length=100, null=True, unique=True, editable=False, default=uuid.uuid4)
+    order_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, default='Pending')
@@ -83,7 +101,11 @@ class Order(models.Model):
     
     def address_set(self):
         return self.address_set.all()
-
+    
+    def save(self, *args, **kwargs):
+        if self.status == 'Pending' and not self.created_at:
+            self.created_at = timezone.now()
+        super().save(*args, **kwargs)
 
 
 class OrderdArticle(models.Model):
@@ -137,10 +159,9 @@ class Complaint(models.Model):
     ]
     
     customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True)
-    order = models.ForeignKey('Order', on_delete=models.SET_NULL, null=True, blank=True)
+    order = models.OneToOneField(Order, on_delete=models.CASCADE, null=True, blank=True)
     reason = models.TextField(default='No reason provided')
     articles = models.ManyToManyField('Article', blank=True)
-    description = models.TextField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Received')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

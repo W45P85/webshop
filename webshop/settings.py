@@ -27,6 +27,8 @@ ALLOWED_HOSTS = ['drukober.pythonanywhere.com', '127.0.0.1']
 #CSRF_COOKIE_SECURE = True
 
 
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # Maximale Größe in Bytes (hier 5 MB)
+
 
 MESSAGE_TAGS = {
     messages.DEBUG: 'alert-secondary',

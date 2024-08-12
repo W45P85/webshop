@@ -100,7 +100,8 @@ document.addEventListener('DOMContentLoaded', function () {
         let customerData = {
             'name': formular.inputName.value,
             'email': formular.inputEmail.value,
-            'cart_total': parseFloat(cartTotalInput.value.replace(',', '.'))
+            'cart_total': parseFloat(cartTotalInput.value.replace(',', '.')),
+            'status': 'Pending'
         };
 
         let deliveryAddress = {

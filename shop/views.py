@@ -291,7 +291,7 @@ def bestellen(request):
             customer = request.user.customer
             order = Order.objects.filter(customer=customer, done=False).first()
             if order is None:
-                order = Order.objects.create(customer=customer, done=False, created_at=timezone.now())
+                order = Order.objects.create(customer=customer, done=False)
 
             address_data = {
                 'address': data['deliveryAddress']['address'],
@@ -363,7 +363,7 @@ def order(request, id):
         messages.error(request, "Bestellung nicht gefunden.")
         return redirect('shop')
 
-    if request.user.is_superuser or (order.customer and order.customer.user == request.user):
+    if request.user.is_superuser or is_admin_or_seller(request.user):
         articles = order.orderdarticle_set.all()
         ctx = {'articles': articles, 'order': order}
         return render(request, 'shop/order.html', ctx)
@@ -680,8 +680,8 @@ def mark_delivered(request):
         order = get_object_or_404(Order, order_id=order_id, status='Dispatched')
         order.status = 'Delivered'
         order.save()
-        return redirect('pending_orders')  # Oder eine andere URL, falls du die Ansicht ändern möchtest
-    return redirect('pending_orders')  # Fallback, falls keine POST-Anfrage vorliegt
+        return redirect('pending_orders')
+    return redirect('pending_orders')
 
 
 @login_required
@@ -755,18 +755,33 @@ def search_order(request):
 @login_required
 def complaint_form(request, order_id):
     order = get_object_or_404(Order, order_id=order_id)
+    
+    # Überprüfen, ob bereits eine Reklamation für diese Bestellung existiert
+    if Complaint.objects.filter(order=order).exists():
+        # Optional: Fehlermeldung ausgeben oder weiterleiten
+        messages.error(request, "Für diese Bestellung wurde bereits eine Reklamation eingereicht.")
+        return redirect('order', id=order.order_id)
 
     if request.method == 'POST':
         form = ComplaintForm(request.POST, request.FILES)
         if form.is_valid():
             complaint = form.save(commit=False)
             complaint.order = order
+            complaint.customer = order.customer
             complaint.save()
             
             # Update order status
             order.status = 'Complained'
             order.save()
-
+            
+            # Verknüpfen der Artikel zur Reklamation
+            ordered_articles = order.get_ordered_articles()
+            # Extrahieren der Artikel IDs
+            article_ids = [article.article.id for article in ordered_articles]
+            # Setzen der Artikel auf die Reklamation
+            complaint.articles.set(article_ids)
+            
+            messages.success(request, "Reklamation erfolgreich eingereicht.")
             return redirect('order', id=order.order_id)
     else:
         form = ComplaintForm()

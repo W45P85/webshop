@@ -169,9 +169,8 @@
                             <tr>
                                 <td><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></td>
                                 <td>{{ order.customer.user.email }}</td>
-                                <td>{{ order.order_date }}</td>
-                                <td>{{ order.tracking_number }}</td> <!-- Hier könntest du den Grund für die Reklamation speichern -->
-                            </tr>
+                                <td>{{ complaint.created_at }}</td>
+                                <td>{{ complaint.reason }}</td>
                             {% endfor %}
                         </tbody>
                     </table>
