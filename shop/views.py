@@ -266,14 +266,13 @@ def check_and_fix_customers():
 
 def bestellen(request):
     try:
-        order_id = uuid.uuid4()
         data = json.loads(request.body)
         logging.info(f"Received data: {data}")
 
         # Default cart_total value
         cart_total = 0.00
 
-        # Server-side validation of required fields in customerData and deliveryAddress
+        # Validation of required fields in customerData and deliveryAddress
         required_customer_fields = ['name', 'email']
         required_address_fields = ['address', 'zip', 'city', 'country']
         
@@ -319,14 +318,15 @@ def bestellen(request):
         else:
             return HttpResponseBadRequest("Invalid cart total format")
 
-        order.order_id = order_id
+        order.order_id = uuid.uuid4()
+        order.order_date = timezone.now()
         order.done = True
         order.save()
 
         paypal_dict = {
             "business": 'sb-n9yva31537598@business.example.com',
             "amount": format(cart_total, '.2f'),
-            "invoice": str(order_id),
+            "invoice": str(order.order_id),
             "currency_code": "EUR",
             "notify_url": request.build_absolute_uri(reverse('paypal-ipn')),
             "return": request.build_absolute_uri(reverse('shop')),
@@ -335,7 +335,7 @@ def bestellen(request):
 
         paypal_form = PayPalPaymentsForm(initial=paypal_dict)
 
-        order_url = str(order_id)
+        order_url = str(order.order_id)
         messages.success(request, mark_safe(
             f"Vielen Dank für Ihre Bestellung: <a href='/order/{order_url}'>{order_url}</a>"
             "<br>Jetzt mit PayPal bezahlen:"

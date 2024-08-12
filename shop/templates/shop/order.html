@@ -15,7 +15,7 @@
                         <div class="col-md-6">
                             <p><strong>Auftragsnummer:</strong> {{ order.order_id }}</p>
                             <p><strong>Käufer:</strong> {{ order.customer }}</p>
-                            <p><strong>Bestelldatum:</strong> {{ order.created_at }}</p>
+                            <p><strong>Bestelldatum:</strong> {{ order.order_date }}</p>
                             <u><h3 class="mt-4" style="color: #2d6a4f"><strong>Gesamtpreis:</strong> {{ order.get_cart_total|floatformat:2 }} €</h3></u>
                         </div>
                         <div class="col-md-6">

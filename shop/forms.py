@@ -80,14 +80,6 @@ class ProfileForm(forms.ModelForm):
         self.fields['country'].label = 'Land'
         self.fields['is_default'].widget.attrs.update({'class': 'form-check-input'})
         self.fields['is_default'].label = 'Als Standardadresse setzen'
-        
-        def clean_profile_picture(self):
-            picture = self.cleaned_data.get('profile_picture')
-            if picture:
-                max_size_mb = 5  # Maximale Größe in MB
-                if picture.size > max_size_mb * 1024 * 1024:
-                    raise ValidationError(f"Das Bild darf nicht größer als {max_size_mb} MB sein.")
-            return picture
     
     def save(self, user, commit=True):
         # Update customer fields
@@ -215,6 +207,8 @@ class ComplaintForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        self.selected_order = kwargs.pop('selected_order', None)
         super().__init__(*args, **kwargs)
         self.fields['image'].widget.attrs.update({'class': 'form-control'})
         self.fields['image'].label = 'Bild der Reklamation'

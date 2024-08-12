@@ -47,6 +47,7 @@ class Customer(models.Model):
     def last_name(self):
         return self.user.last_name if self.user else ''
 
+
 class Article(models.Model):
     name = models.CharField(max_length=200, null=True)
     description = models.TextField(null=True, blank=True)
@@ -70,9 +71,9 @@ class Order(models.Model):
     ]
     
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, blank=True, null=True, db_index=True)
-    order_date = models.DateTimeField(auto_now_add=True)
-    done = models.BooleanField(default=False, null=True, blank=False)
-    order_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    order_date = models.DateTimeField(null=True, blank=True)
+    done = models.BooleanField(default=False)
+    order_id = models.UUIDField(editable=False, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, default='Pending')

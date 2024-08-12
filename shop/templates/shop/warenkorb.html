@@ -72,8 +72,8 @@
                                         <td>{{ article.article.price|floatformat:2 }} €</td>
                                         <td>{{ article.get_total|floatformat:2 }} €</td>
                                         <td>
-                                            <button data-artikel="{{ article.article.id }}" data-action="entfernen" class="btn btn-outline-danger warenkorb-bestellen d-none d-lg-inline">löschen</button>
-                                            <button data-artikel="{{ article.article.id }}" data-action="entfernen" class="btn btn-outline-danger warenkorb-bestellen d-lg-none">löschen</button>
+                                            <button data-artikel="{{ article.article.id }}" data-action="entfernen" class="btn btn-outline-danger warenkorb-bestellen d-none d-lg-inline"><i class="fa-solid fa-trash"></i></button>
+                                            <button data-artikel="{{ article.article.id }}" data-action="entfernen" class="btn btn-outline-danger warenkorb-bestellen d-lg-none"><i class="fa-solid fa-trash"></i></button>
                                         </td>
                                     </tr>
                                     {% endfor %}
