@@ -12,11 +12,16 @@
                 <li class="list-group-item">
                     <a href="{% url 'shop' %}" class="text-decoration-none">Alle</a>
                 </li>
-                {% for category in categories %}
-                <li class="list-group-item d-flex justify-content-between align-items-center">
-                    <a href="?category={{ category.name }}" class="text-decoration-none">{{ category.name }}</a>
-                    <span class="badge bg-primary rounded-pill">{{ category.num_articles }}</span>
-                </li>
+                {% for category in top_level_categories %}
+                    <li class="list-group-item">
+                        <a href="?category={{ category.name }}" class="text-decoration-none">{{ category.name }}</a>
+                        <span class="badge bg-primary rounded-pill float-end">{{ category.num_articles }}</span>
+                        {% if category.children.exists %}
+                            <ul class="list-unstyled ms-3">
+                                {% include 'shop/category_tree.html' with categories=category.children.all %}
+                            </ul>
+                        {% endif %}
+                    </li>
                 {% endfor %}
             </ul>
         </div>
@@ -36,11 +41,18 @@
                                 {% ratings article read_only=True template_name="shop/star_ratings/widget.html" icon_height=16 icon_width=16 %}
                                 <p class="card-text">{{ article.description }}</p>
                                 <div class="mt-auto d-flex justify-content-between align-items-center">
-                                    <h5 class="text-secondary mb-0">{{ article.price|floatformat:2 }} €</h5></a>
-                                    <button data-artikel="{{ article.id }}" data-action="bestellen" class="btn btn-outline-success warenkorb-bestellen"><i class="fas fa-shopping-cart fa" title="Dem Warenkorb hinzufügen"></i></button>
+                                    <h5 class="text-secondary mb-0">{{ article.price|floatformat:2 }} €</h5>
+                                    <button data-artikel="{{ article.id }}" data-action="bestellen" class="btn btn-outline-success warenkorb-bestellen">
+                                        <i class="fas fa-shopping-cart fa" title="Warenkorb hinzufügen"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
+                    </a>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <p>Keine Artikel gefunden.</p>
                 </div>
                 {% endfor %}
             </div>
@@ -48,4 +60,4 @@
     </div>
 </div>
 
-{% endblock content %}
+{% endblock %}

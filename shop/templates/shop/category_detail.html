@@ -1,0 +1,20 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block content %}
+    <div class="container mt-4">
+        <h3 class="fw-bold">Kategorie: {{ category.name }}</h3>
+        <ul class="list-group mt-3">
+            {% for article in articles %}
+                <li class="list-group-item">
+                    <h5>{{ article.name }}</h5>
+                    <p>{{ article.description }}</p>
+                    <p>Preis: {{ article.price }}</p>
+                </li>
+            {% empty %}
+                <li class="list-group-item">Keine Artikel in dieser Kategorie.</li>
+            {% endfor %}
+        </ul>
+        <a href="{% url 'add_category' %}" class="btn btn-primary mt-3">Zurück zur Übersicht</a>
+    </div>
+{% endblock %}

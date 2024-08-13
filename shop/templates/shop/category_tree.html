@@ -1,0 +1,14 @@
+<ul class="list-unstyled">
+    {% for category in categories %}
+    <li class="d-flex justify-content-between align-items-center">
+        <a href="?category={{ category.name }}" class="text-decoration-none">{{ category.name }}</a>
+        <span class="badge bg-primary rounded-pill float-end">{{ category.num_articles }}</span>
+        {% if category.children.exists %}
+            <!-- Render child categories with indentation -->
+            <ul class="list-unstyled ms-3">
+                {% include 'shop/category_tree.html' with categories=category.children.all %}
+            </ul>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>

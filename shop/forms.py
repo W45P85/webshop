@@ -163,15 +163,16 @@ class EditArticleForm(forms.ModelForm):
 
 
 class AddCategoryForm(forms.ModelForm):
-    categories = forms.CharField(widget=forms.Textarea)
+    parent = forms.ModelChoiceField(queryset=Category.objects.all(), required=False, empty_label='Keine übergeordnete Kategorie')
+
     class Meta:
         model = Category
-        fields = ['categories']
+        fields = ['name', 'parent']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['categories'].widget.attrs.update({'class': 'form-control form-control-sm'})
-        self.fields['categories'].label = 'Kategorien'
+        self.fields['name'].widget.attrs.update({'class': 'form-control form-control-sm'})
+        self.fields['parent'].widget.attrs.update({'class': 'form-control form-control-sm'})
 
 
 class TrackingNumberForm(forms.Form):

@@ -144,11 +144,30 @@ class Address(models.Model):
 
 class Category(models.Model):
     name = models.CharField(max_length=100)
+    parent = models.ForeignKey('self', null=True, blank=True, on_delete=models.CASCADE, related_name='children')
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.name
+
+    def get_descendants(self):
+        # Gibt alle untergeordneten Kategorien einschließlich der Kinderkategorien zurück
+        descendants = []
+        def add_children(category):
+            children = list(category.children.all())
+            for child in children:
+                descendants.append(child)
+                add_children(child)
+        add_children(self)
+        return descendants
+
+    @property
+    def num_articles(self):
+        count = Article.objects.filter(category=self).count()
+        for child in self.children.all():
+            count += child.num_articles
+        return count
 
 
 class Complaint(models.Model):

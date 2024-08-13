@@ -12,10 +12,12 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q, F, FloatField, ExpressionWrapper
 from datetime import timedelta
+
+from django.views import View
 from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm, ComplaintForm, OrderSearchForm
 from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
-from django.http import JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
+from django.http import HttpResponseNotFound, JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
 from paypal.standard.forms import PayPalPaymentsForm
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from urllib.parse import unquote
@@ -26,8 +28,11 @@ def is_admin_or_seller(user):
     return user.groups.filter(name='Admins').exists() or user.groups.filter(name='Sellers').exists()
 
 
+from django.db.models import Count
+
 def shop(request):
-    categories = Category.objects.annotate(num_articles=Count('article')).order_by('name')
+    # Holen aller Kategorien
+    categories = Category.objects.all().order_by('name')
     articles = Article.objects.all()
 
     category_filter = request.GET.get('category')
@@ -36,12 +41,19 @@ def shop(request):
     else:
         articles = Article.objects.all()
 
+    # Separieren der Hauptkategorien von den Kindkategorien
+    top_level_categories = categories.filter(parent__isnull=True)
+
     ctx = {
-        'categories': categories,
+        'top_level_categories': top_level_categories,
         'articles': articles,
     }
 
     return render(request, 'shop/shop.html', ctx)
+
+
+
+
 
 
 def is_cookie_accepted(request, cookie_name):
@@ -583,20 +595,12 @@ def edit_article(request, article_id):
 @login_required
 @user_passes_test(is_admin_or_seller)
 def add_category(request):
-    form = AddCategoryForm()
-    categories = Category.objects.all().order_by('name')
-
     if request.method == 'POST':
         if 'add_category' in request.POST:
             form = AddCategoryForm(request.POST)
             if form.is_valid():
-                categories_input = form.cleaned_data.get('categories')
-                categories = [category.strip() for category in categories_input.split(',')]
-                
-                for category_name in categories:
-                    Category.objects.get_or_create(name=category_name)
-
-                messages.success(request, 'Kategorien erfolgreich angelegt!')
+                form.save()
+                messages.success(request, 'Kategorie erfolgreich angelegt!')
                 return redirect('add_category')
 
         elif 'delete_category' in request.POST:
@@ -605,7 +609,55 @@ def add_category(request):
             messages.success(request, 'Kategorien erfolgreich gelöscht!')
             return redirect('add_category')
 
-    return render(request, 'shop/add_category.html', {'form': form, 'categories': categories})
+    else:
+        form = AddCategoryForm()
+
+    # Holen aller Kategorien
+    categories = Category.objects.all().order_by('name')
+
+    # Separieren der Hauptkategorien von den Kindkategorien
+    top_level_categories = categories.filter(parent__isnull=True)
+
+    ctx = {
+        'form': form,
+        'top_level_categories': top_level_categories,
+        'categories': categories,
+    }
+
+    return render(request, 'shop/add_category.html', ctx)
+
+
+def category_detail(request, pk):
+    try:
+        # Hole die Kategorie und ihre Artikel
+        category = Category.objects.get(pk=pk)
+        articles = Article.objects.filter(category=category)
+
+        # Hole alle Hauptkategorien
+        top_level_categories = Category.objects.filter(parent__isnull=True).prefetch_related('children')
+
+        # Berechne die Anzahl der Artikel für jede Kategorie
+        for cat in top_level_categories:
+            cat.calculate_num_articles = cat.num_articles
+
+        # Holen Sie sich die IDs der Kindkategorien der aktuellen Kategorie
+        child_ids = set(cat.id for cat in category.get_descendants())
+        # Auch die ID der aktuellen Kategorie hinzufügen, falls sie als Hauptkategorie angezeigt wird
+        child_ids.add(category.id)
+
+        # Filtere Hauptkategorien aus, die bereits als Kindkategorien existieren
+        filtered_categories = top_level_categories.exclude(id__in=child_ids)
+
+        ctx = {
+            'category': category,
+            'articles': articles,
+            'categories': filtered_categories,
+            'child_categories': category.get_descendants()  # Alle Kinder der aktuellen Kategorie
+        }
+    except Category.DoesNotExist:
+        return HttpResponseNotFound("Category not found")
+
+    return render(request, 'shop/category_detail.html', ctx)
 
 
 @login_required
