@@ -4,18 +4,18 @@ from django.http import HttpResponseRedirect
 from .models import Customer, Article, Order, OrderdArticle, Address, Category, Complaint
 from .forms import TrackingNumberForm
 
-# Inline admin descriptor for Customer model
+
 class CustomerInline(admin.StackedInline):
     model = Customer
     can_delete = False
     verbose_name_plural = 'Persönliche Angaben'
     fk_name = 'user'
 
-# Define a new User admin
+
 class CustomUserAdmin(admin.ModelAdmin):
     inlines = (CustomerInline, )
 
-# Register Customer model with its admin class
+
 @admin.register(Customer)
 class CustomerAdmin(admin.ModelAdmin):
     list_display = ['__str__', 'email', 'first_name', 'last_name', 'profile_picture', 'is_seller']
@@ -42,7 +42,7 @@ class CustomerAdmin(admin.ModelAdmin):
     last_name.admin_order_field = 'user__last_name'  # Sortieren nach Nachname
     profile_picture.short_description = 'Profilbild'  # Benutzerdefinierte Spaltenüberschrift
 
-# Define Order admin class
+
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('order_id', 'get_cart_total', 'customer_email', 'order_date', 'done')
@@ -142,7 +142,7 @@ class OrderdArticleAdmin(admin.ModelAdmin):
     customer_email.short_description = 'Kunden E-Mail'
     order_date.short_description = 'Bestelldatum'
 
-# Define Address admin class
+
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
     list_display = ('customer_email', 'order_id', 'address', 'city', 'state', 'zipcode', 'order_date')
@@ -172,7 +172,7 @@ class AddressAdmin(admin.ModelAdmin):
     order_id.short_description = 'Order ID'
     order_date.short_description = 'Bestelldatum'
 
-# Define Category admin class
+
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'created_at', 'updated_at')
@@ -180,7 +180,7 @@ class CategoryAdmin(admin.ModelAdmin):
     
     readonly_fields = ('created_at', 'updated_at')
 
-# Define Article admin class
+
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
     list_display = ('name', 'description', 'price', 'category')
