@@ -45,9 +45,15 @@ class CustomerAdmin(admin.ModelAdmin):
 # Define Order admin class
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_id', 'customer_email', 'order_date', 'done', 'get_cart_total')
+    list_display = ('order_id', 'get_cart_total', 'customer_email', 'order_date', 'done')
     list_filter = ('done',)
     search_fields = ('order_id', 'customer__user__email')
+    fieldsets = (
+        (None, {
+            'fields': ('order_id', 'get_cart_total', 'customer', 'order_date', 'done', 'status', 'tracking_number', 'shipping_provider')
+        }),
+    )
+    readonly_fields = ('order_id', 'get_cart_total', 'customer', 'order_date')
 
     def customer_email(self, obj):
         return obj.customer.user.email if obj.customer and obj.customer.user else "Unknown"
@@ -95,30 +101,41 @@ class OrderAdmin(admin.ModelAdmin):
         }
         return render(request, 'admin/pending_orders.html', context)
 
-# Define OrderdArticle admin class
 @admin.register(OrderdArticle)
 class OrderdArticleAdmin(admin.ModelAdmin):
     list_display = ('article_number', 'article_name', 'order_id', 'customer_email', 'quantity', 'order_date')
     list_filter = ('order__order_id',)
+    
+    # Define fieldsets for detail view
+    fieldsets = (
+        (None, {
+            'fields': ('article_number',
+                       'quantity',
+                       'order_id',
+                       'customer_email',
+                       'order_date')
+        }),
+    )
+    readonly_fields = ('article_number', 'article_name', 'order_id', 'customer_email', 'quantity', 'order_date')
 
     def get_queryset(self, request):
         queryset = super().get_queryset(request)
-        return queryset.exclude(order__order_id__isnull=True)
+        return queryset.exclude(order__order_id__isnull=True)  # Exclude objects with missing order_id
 
     def article_number(self, obj):
-        return obj.article.article_number if obj.article else None
+        return obj.article.article_number if obj.article else None  # Handle missing article
 
     def article_name(self, obj):
-        return obj.article.name if obj.article else None
+        return obj.article.name if obj.article else None  # Handle missing article
 
     def order_id(self, obj):
-        return obj.order.order_id if obj.order else None
+        return obj.order.order_id if obj.order else None  # Handle missing order
 
     def customer_email(self, obj):
-        return obj.order.customer.user.email if obj.order and obj.order.customer and obj.order.customer.user else "Unknown"
+        return obj.order.customer.user.email if obj.order and obj.order.customer and obj.order.customer.user else "Unknown"  # Handle missing order or customer
 
     def order_date(self, obj):
-        return obj.order.order_date if obj.order else None
+        return obj.order.order_date if obj.order else None  # Handle missing order
 
     article_name.short_description = 'Artikel Name'
     order_id.short_description = 'Order ID'
@@ -129,6 +146,18 @@ class OrderdArticleAdmin(admin.ModelAdmin):
 @admin.register(Address)
 class AddressAdmin(admin.ModelAdmin):
     list_display = ('customer_email', 'order_id', 'address', 'city', 'state', 'zipcode', 'order_date')
+    fieldsets = (
+        (None, {
+            'fields': ('customer_email',
+                       'order_id',
+                       'address',
+                       'city',
+                       'state',
+                       'zipcode',
+                       'order_date')
+        }),
+    )
+    readonly_fields = ('customer_email', 'order_id', 'address', 'city', 'state', 'zipcode', 'order_date')
 
     def customer_email(self, obj):
         return obj.customer.user.email if obj.customer and obj.customer.user else "Unknown"
@@ -148,6 +177,8 @@ class AddressAdmin(admin.ModelAdmin):
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'created_at', 'updated_at')
     search_fields = ('name',)
+    
+    readonly_fields = ('created_at', 'updated_at')
 
 # Define Article admin class
 @admin.register(Article)
@@ -155,10 +186,14 @@ class ArticleAdmin(admin.ModelAdmin):
     list_display = ('name', 'description', 'price', 'category')
     list_filter = ('category',)
 
+
 @admin.register(Complaint)
 class ComplaintsAdmin(admin.ModelAdmin):
-    list_display = ('customer_email', 'order_id', 'order_date')
-    search_fields = ('customer__user__email', 'description')
+    list_display = ('customer_email', 'order_id', 'order_date', 'reason')
+    search_fields = ('customer__user__email', 'reason')
+    
+    def __str__(self):
+        return f'Reklamation {self.id} - {self.customer.user.email} - {self.order.order_date} - {", ".join(article.name for article in self.articles.all()) if self.articles.exists() else "Unbekannte Artikel"}'
 
     def customer_email(self, obj):
         return obj.customer.user.email if obj.customer and obj.customer.user else "Unknown"
@@ -172,3 +207,10 @@ class ComplaintsAdmin(admin.ModelAdmin):
     customer_email.short_description = 'Kunden E-Mail'
     order_id.short_description = 'Order ID'
     order_date.short_description = 'Bestelldatum'
+    
+    fieldsets = (
+        (None, {
+            'fields': ('customer_email', 'order_id', 'reason', 'articles', 'status', 'image')
+        }),
+    )
+    readonly_fields = ('customer_email', 'order_id', 'reason', 'articles', 'image')

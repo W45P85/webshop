@@ -1,0 +1,17 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12 mb-4">
+            <div class="shadow p-3">
+                <h1 class="fw-bold">Zahlung</h1>
+                {{ form.render }}
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}

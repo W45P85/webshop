@@ -24,6 +24,9 @@ urlpatterns = [
     
     # Rating
     path('ratings/', include('star_ratings.urls', namespace='ratings')),
+    
+    # payments
+    # path('payment/', views.bestellen, name='payment'),
 
     # Authentication
     path("login/", views.loginSeite, name="login"),

@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 import logging
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -328,18 +329,19 @@ def bestellen(request):
         order.order_date = timezone.now()
         order.done = True
         order.save()
-
+        
         paypal_dict = {
-            "business": 'sb-n9yva31537598@business.example.com',
-            "amount": format(cart_total, '.2f'),
-            "invoice": str(order.order_id),
-            "currency_code": "EUR",
-            "notify_url": request.build_absolute_uri(reverse('paypal-ipn')),
-            "return": request.build_absolute_uri(reverse('shop')),
-            "cancel_return": request.build_absolute_uri(reverse('shop')),
+            "business": os.environ.get('PAYPAL_BUSINESS'),
+            "amount": format(order.get_cart_total),
+            "invoice": order.order.id,
+            "currency_code": os.environ.get('PAYPAL_CURRENCY'),
+            "notify_url": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_NOTIFY_URL'))),
+            "return": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_RETURN_URL'))),
+            "cancel_return": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_CANCEL_RETURN_URL'))),
         }
 
         paypal_form = PayPalPaymentsForm(initial=paypal_dict)
+        # ctx = {"form": paypal_form}
 
         order_url = str(order.order_id)
         messages.success(request, mark_safe(
