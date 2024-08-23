@@ -2,6 +2,7 @@ import json
 import uuid
 import logging
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.dispatch import receiver
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.contrib import messages
@@ -12,8 +13,6 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q, F, FloatField, ExpressionWrapper
 from datetime import timedelta
-
-from django.views import View
 from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm, ComplaintForm, OrderSearchForm
 from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
@@ -21,14 +20,13 @@ from django.http import HttpResponseNotFound, JsonResponse, HttpResponse, HttpRe
 from paypal.standard.forms import PayPalPaymentsForm
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from urllib.parse import unquote
+from django.db.models.signals import pre_save
 
 logging.basicConfig(level=logging.DEBUG)
 
 def is_admin_or_seller(user):
     return user.groups.filter(name='Admins').exists() or user.groups.filter(name='Sellers').exists()
 
-
-from django.db.models import Count
 
 def shop(request):
     # Holen aller Kategorien
@@ -50,10 +48,6 @@ def shop(request):
     }
 
     return render(request, 'shop/shop.html', ctx)
-
-
-
-
 
 
 def is_cookie_accepted(request, cookie_name):
@@ -542,14 +536,27 @@ def search_results(request):
     return render(request, 'shop/search_results.html', ctx)
 
 
+@receiver(pre_save, sender=Article)
+def generate_article_number(sender, instance, **kwargs):
+    if not instance.article_number:
+        # Finde die höchste vorhandene ID
+        last_article = Article.objects.order_by('-id').first()
+        if last_article:
+            last_number = int(last_article.article_number.split('-')[1])
+            new_number = last_number + 1
+        else:
+            new_number = 1
+        instance.article_number = f"A-{new_number:05d}"
+
 @login_required
 @user_passes_test(is_admin_or_seller)
 def add_article(request):
+    article_number = Article.objects.all()
     if request.method == 'POST':
         form = AddArticleForm(request.POST, request.FILES)
         if form.is_valid():
             article = form.save()
-            messages.success(request, 'Artikel erfolgreich angelegt!')
+            messages.success(request, 'Artikel ' + {{ article_number }} +' erfolgreich angelegt!')
             return redirect('add_article')
     else:
         form = AddArticleForm()
@@ -559,9 +566,10 @@ def add_article(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+
     return render(request, 'shop/add_article.html', {
         'form': form,
-        'page_obj': page_obj, 
+        'page_obj': page_obj,
         'articles': articles
     })
 

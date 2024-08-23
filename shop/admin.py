@@ -1,5 +1,4 @@
 from django.contrib import admin
-from django.urls import path
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
 from .models import Customer, Article, Order, OrderdArticle, Address, Category, Complaint
@@ -99,7 +98,15 @@ class OrderAdmin(admin.ModelAdmin):
 # Define OrderdArticle admin class
 @admin.register(OrderdArticle)
 class OrderdArticleAdmin(admin.ModelAdmin):
-    list_display = ('article_name', 'order_id', 'customer_email', 'quantity', 'order_date')
+    list_display = ('article_number', 'article_name', 'order_id', 'customer_email', 'quantity', 'order_date')
+    list_filter = ('order__order_id',)
+
+    def get_queryset(self, request):
+        queryset = super().get_queryset(request)
+        return queryset.exclude(order__order_id__isnull=True)
+
+    def article_number(self, obj):
+        return obj.article.article_number if obj.article else None
 
     def article_name(self, obj):
         return obj.article.name if obj.article else None

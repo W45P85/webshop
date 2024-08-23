@@ -16,7 +16,10 @@
             <div class="d-flex flex-wrap">
                 <h3 class="me-auto fw-bold p-2">Artikel anlegen oder bearbeiten</h3>
             </div>
-            <p class="text-muted mb-4">Um einen Artikel zu bearbeiten, suche den entsprechenden Artikel in <a href="#artikel-loeschen">unten stehender Tabelle</a> und wähle <b>bearbeiten</b>.</p>
+            <p class="text-muted mb-4">Um einen Artikel zu bearbeiten, suche den entsprechenden Artikel in <a href="#artikel-loeschen">unten stehender Tabelle</a> und wähle <b>bearbeiten</b>.
+                <br />
+                Artikelnummern können ausschließlich von Admins im Backend angepasst werden.
+            </p>
             <form method="post" enctype="multipart/form-data">
                 {% csrf_token %}
                 {{ form.as_p }}
@@ -47,7 +50,7 @@
                 <tbody>
                     {% for article in page_obj %}
                         <tr>
-                            <td>{{ article.id }}</td>
+                            <td>{{ article.article_number }}</td>
                             <td><a href="{% url 'article_detail' id=article.id %}">{{ article.name }}</a></td>
                             <td>{{ article.description }}</td>
                             <td>{{ article.price }} €</td>

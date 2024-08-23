@@ -63,7 +63,7 @@
                 </ul>
             </div>
             <div class="col-md-7 col-lg-8">
-                <h4 class="mb-3">Billing address</h4>
+                <h4 class="mb-3">Rechnungsadresse</h4>
                 <form id="formular" method="POST" action="{% url 'bestellen' %}" class="needs-validation" novalidate>
                     {% csrf_token %}
                     <div class="row g-3">
@@ -113,13 +113,13 @@
                                 <option value="">Land wählen...</option>
                                 <option value="DE" {% if address and address.country == "DE" %}selected{% endif %}>Deutschland</option>
                                 <option value="AT" {% if address and address.country == "AT" %}selected{% endif %}>Österreich</option>
-                                <option value="CH" {% if address and address.country == "CH" %}selected{% endif %}>Schweiz</option>
+                                <option value="CH" {% if address and address.country == "NL" %}selected{% endif %}>Niederlande</option>
                             </select>
                         </div>
                     </div>
                     <!-- Payment section in the form -->
                     <hr class="my-4">
-                    <h4 class="mb-3">Payment</h4>
+                    <h4 class="mb-3">Zahlung</h4>
                         <input id="cart_total" type="hidden" name="cart_total" value="0.00"> <!-- Hier fügen Sie das versteckte Input-Feld hinzu -->
                     <div class="form-check">
                         <input id="credit" name="paymentMethod" type="radio" class="form-check-input" disabled>

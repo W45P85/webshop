@@ -54,6 +54,7 @@ class Article(models.Model):
     price = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
     img = models.ImageField(null=True, blank=True, upload_to='product_images/', default='article_pics/none.jpeg')
     category = models.ForeignKey('Category', on_delete=models.CASCADE, null=True, blank=True)
+    article_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
 
     def __str__(self):
         return self.name
