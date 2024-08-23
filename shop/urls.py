@@ -22,6 +22,9 @@ urlpatterns = [
     path('complaint-form/<uuid:order_id>/', views.complaint_form, name='complaint_form'),
     path('mark-delivered/', views.mark_delivered, name='mark_delivered'),
     
+    # PDF
+    path('generate_pdf/', views.generate_pdf, name='generate_pdf'),
+    
     # Rating
     path('ratings/', include('star_ratings.urls', namespace='ratings')),
     
