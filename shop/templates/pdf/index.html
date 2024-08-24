@@ -1,0 +1,175 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1 class="mb-4">Rechnung generieren</h1>
+
+    <form method="post" action="{% url 'generate_pdf' %}" class="needs-validation" novalidate>
+        {% csrf_token %}
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5">Verkäufer</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="seller_name">Name:</label>
+                    <input type="text" id="seller_name" name="seller[personName]" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="seller_street">Straße & Nr.:</label>
+                    <input type="text" id="seller_street" name="seller[address][streetNr]" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="seller_place">PLZ & Ort:</label>
+                    <input type="text" id="seller_place" name="seller[address][place]" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="seller_phone">Telefon:</label>
+                    <input type="text" id="seller_phone" name="seller[contacts][phone]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_email">E-Mail:</label>
+                    <input type="email" id="seller_email" name="seller[contacts][email]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_web">Webseite:</label>
+                    <input type="url" id="seller_web" name="seller[contacts][web]" class="form-control">
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5">Kunde</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="client_name">Firma:</label>
+                    <input type="text" id="client_name" name="client[companyName]" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="client_street">Straße & Nr.:</label>
+                    <input type="text" id="client_street" name="client[address][streetNr]" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="client_place">PLZ & Ort:</label>
+                    <input type="text" id="client_place" name="client[address][place]" class="form-control" required>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5">Rechnung</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="invoice_date">Ausstellungsdatum:</label>
+                    <input type="date" id="invoice_date" name="invoiceDate" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="invoice_number">Rechnungsnummer:</label>
+                    <input type="text" id="invoice_number" name="invoiceNr" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="achievement_period">Leistungszeitraum:</label>
+                    <input type="text" id="achievement_period" name="achievementPeriod" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="text_before">Text vor der Tabelle:</label>
+                    <textarea id="text_before" name="textBefore" class="form-control" rows="3"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5">Positionen</h2>
+            </div>
+            <div class="card-body">
+                <table id="positions_table" class="table table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Pos.</th>
+                            <th>Beschreibung</th>
+                            <th>Menge</th>
+                            <th>Einheit</th>
+                            <th>Einzelpreis (€)</th>
+                            <th>Gesamtpreis (€)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+                <button type="button" class="btn btn-primary" onclick="addPosition()">Position hinzufügen</button>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5">Bankverbindung</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="seller_bank_name">Bankname:</label>
+                    <input type="text" id="seller_bank_name" name="seller[bankAccount][bankName]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_iban">IBAN:</label>
+                    <input type="text" id="seller_iban" name="seller[bankAccount][iban]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_bic">BIC:</label>
+                    <input type="text" id="seller_bic" name="seller[bankAccount][bic]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_ustid">USt-ID:</label>
+                    <input type="text" id="seller_ustid" name="seller[bankAccount][ustid]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_account_holder">Kontoinhaber:</label>
+                    <input type="text" id="seller_account_holder" name="seller[bankAccount][accountHolder]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="suggested_purpose">Verwendungszweck:</label>
+                    <input type="text" id="suggested_purpose" name="suggestedPurpose" class="form-control">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group text-center">
+            <button type="submit" name="generate_pdf" id="generate_pdf" value="PDF erstellen" class="btn btn-primary">PDF erstellen</button>
+        </div>
+    </form>
+
+    <script>
+        function addPosition() {
+            var table = document.getElementById("positions_table");
+            var tbody = table.getElementsByTagName("tbody")[0];
+            var row = tbody.insertRow();
+            var index = tbody.rows.length - 1;
+            var cell1 = row.insertCell();
+            var cell2 = row.insertCell();
+            var cell3 = row.insertCell();
+            var cell4 = row.insertCell();
+            var cell5 = row.insertCell();
+            var cell6 = row.insertCell();
+            var cell7 = row.insertCell();
+            cell1.innerHTML = '<input type="text" name="positions[' + index + '][position]" class="form-control">';
+            cell2.innerHTML = '<input type="text" name="positions[' + index + '][description]" class="form-control">';
+            cell3.innerHTML = '<input type="text" name="positions[' + index + '][quantity]" class="form-control">';
+            cell4.innerHTML = '<input type="text" name="positions[' + index + '][unit]" class="form-control">';
+            cell5.innerHTML = '<input type="text" name="positions[' + index + '][unitPrice]" class="form-control">';
+            cell6.innerHTML = '<input type="text" name="positions[' + index + '][totalPrice]" class="form-control">';
+            cell7.innerHTML = '<button type="button" class="btn btn-danger btn-sm" onclick="removePosition(this)">Entfernen</button>';
+        }
+
+        function removePosition(button) {
+            button.parentNode.parentNode.remove();
+        }
+    </script>
+</div>
+{% endblock content %}

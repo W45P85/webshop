@@ -3,6 +3,8 @@ import os
 import uuid
 import logging
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.files.base import ContentFile
+from django.db import IntegrityError
 from django.dispatch import receiver
 from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
@@ -24,8 +26,9 @@ from urllib.parse import unquote
 from django.db.models.signals import pre_save
 from xhtml2pdf import pisa
 from io import BytesIO
+from django.template.loader import render_to_string
 
-logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 def is_admin_or_seller(user):
     return user.groups.filter(name='Admins').exists() or user.groups.filter(name='Sellers').exists()
@@ -873,35 +876,125 @@ def complaint_detail(request, complaint_id):
     return render(request, 'shop/complaint_detail.html', ctx)
 
 
-def generate_pdf_function(company_name, invoice_number, invoice_date, customer_name, customer_address, items):
-  # Write your PDF generation code here
-  html = '<html><body>'
-  html += '<h1>Rechnung</h1>'
-  html += '<p>Firma: ' + company_name + '</p>'
-  html += '<p>Rechnungsnummer: ' + invoice_number + '</p>'
-  html += '<p>Rechnungsdatum: ' + invoice_date + '</p>'
-  html += '<p>Name: ' + customer_name + '</p>'
-  html += '<p>Adresse: ' + customer_address + '</p>'
-  html += '<h2>Artikel</h2>'
-  html += '<p>' + items + '</p>'
-  html += '</body></html>'
-  result = pisa.CreatePDF(html, dest=BytesIO())
-  return result
-
-
 def generate_pdf(request):
-  if request.method == 'POST':
-    company_name = request.POST.get('company_name', '')
-    invoice_number = request.POST.get('invoice_number', '')
-    invoice_date = request.POST.get('invoice_date', '')
-    customer_name = request.POST.get('customer_name', '')
-    customer_address = request.POST.get('customer_address', '')
-    items = request.POST.get('items', '')
-    # Generate PDF using xhtml2pdf
-    result = generate_pdf_function(company_name, invoice_number, invoice_date, customer_name, customer_address, items)
-    if result.err:
-      return HttpResponse('Error generating PDF: %s' % result.err)
-    response = HttpResponse(content_type='application/pdf')
-    response.write(result.dest.getvalue())
-    return response
-  return render(request, 'pdf/invoice.html')
+    if request.method == 'POST':
+        try:
+            # Daten aus dem Formular holen
+            firma = request.POST.get('seller[personName]', '')
+            seller_strasse_nr = request.POST.get('seller[address][streetNr]', '')
+            seller_plz = request.POST.get('client[address][place]', '')
+            rechnungsnummer = request.POST.get('invoiceNr', '')
+            rechnungsdatum = request.POST.get('invoiceDate', '')
+            kunde = request.POST.get('client[companyName]', '')
+            adresse = request.POST.get('client[address][streetNr]', '') + ', ' + request.POST.get('client[address][place]', '')
+            text_before = request.POST.get('textBefore', '')
+            text_after = request.POST.get('textAfter', '')
+
+            seller_bank_name = request.POST.get('seller[bankAccount][bankName]', '')
+            seller_iban = request.POST.get('seller[bankAccount][iban]', '')
+            seller_bic = request.POST.get('seller[bankAccount][bic]', '')
+            seller_ustid = request.POST.get('seller[bankAccount][ustid]', '')
+            seller_account_holder = request.POST.get('seller[bankAccount][accountHolder]', '')
+            suggested_purpose = request.POST.get('suggestedPurpose', '')
+
+            # Positionen abrufen
+            positions = []
+            added_positions = set()
+            for key in request.POST:
+                if key.startswith('positions'):
+                    index = key.split('[')[1].split(']')[0]
+                    if index.isdigit():
+                        position = {
+                            'position': request.POST.get(f'positions[{index}][position]', ''),
+                            'description': request.POST.get(f'positions[{index}][description]', ''),
+                            'quantity': request.POST.get(f'positions[{index}][quantity]', ''),
+                            'unit': request.POST.get(f'positions[{index}][unit]', ''),
+                            'unit_price': request.POST.get(f'positions[{index}][unitPrice]', ''),
+                            'total_price': request.POST.get(f'positions[{index}][totalPrice]', ''),
+                        }
+                        # Debugging-Ausgabe
+                        logger.debug(f"Verarbeite Position: {position}")
+
+                        # Überprüfen, ob die Position bereits hinzugefügt wurde
+                        position_tuple = tuple(position.items())
+                        if position_tuple not in added_positions:
+                            positions.append(position)
+                            added_positions.add(position_tuple)
+
+            # HTML-Inhalt erstellen
+            html = render_to_string('pdf/invoice.html', {
+                'seller_name': firma,
+                'straße_nr': seller_strasse_nr,
+                'plz': seller_plz,
+                'rechnungsnummer': rechnungsnummer,
+                'rechnungsdatum': rechnungsdatum,
+                'kunde': kunde,
+                'adresse': adresse,
+                'positions': positions,
+                'text_before': text_before,
+                'text_after': text_after,
+                'seller_bank_name': seller_bank_name,
+                'seller_iban': seller_iban,
+                'seller_bic': seller_bic,
+                'seller_ustid': seller_ustid,
+                'seller_account_holder': seller_account_holder,
+                'suggested_purpose': suggested_purpose,
+            })
+
+            # PDF erstellen
+            result = BytesIO()
+            pdf = pisa.CreatePDF(html, dest=result)
+
+            if pdf.err:
+                logger.error(f"Fehler beim Erstellen der PDF: {pdf.err}")
+                return HttpResponse("Ein Fehler ist beim Erstellen der PDF aufgetreten.")
+
+            pdf_data = result.getvalue()
+
+            # Order-Objekt abrufen oder erstellen
+            try:
+                order = Order.objects.get(pk=1)
+            except Order.DoesNotExist:
+                logger.error("Order-Objekt mit pk=1 existiert nicht.")
+                return HttpResponse("Das benötigte Order-Objekt wurde nicht gefunden.")
+
+            # Generieren der Rechnungs-ID außerhalb der Transaktion
+            invoice_id = Invoice.get_next_invoice_id()
+            invoice_filename = f"Rechnung_{invoice_id}.pdf"
+
+            # Rechnung speichern innerhalb einer Transaktion
+            try:
+                with transaction.atomic():
+                    invoice_instance = Invoice(
+                        pdf=ContentFile(pdf_data, name=invoice_filename),
+                        invoice_id=invoice_id,
+                        order=order
+                    )
+                    invoice_instance.save()
+            except IntegrityError:
+                # Wenn es zu einem IntegrityError kommt, wird die Transaktion zurückgerollt
+                logger.error(f"Rechnungs-ID {invoice_id} bereits vergeben.")
+                messages.error(request, "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später noch einmal.")
+                return redirect('generate_pdf')  # Zurück zum Formular
+
+            messages.success(request, "Rechnung erfolgreich erstellt.")
+
+            # PDF herunterladen
+            response = HttpResponse(content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="{invoice_filename}"'
+            response.write(pdf_data)
+            return response
+
+        except IntegrityError as ie:
+            logger.error(f"Integritätsfehler beim Speichern der Rechnung: {str(ie)}")
+            messages.error(request, "Ein Integritätsfehler ist aufgetreten. Bitte versuchen Sie es später noch einmal.")
+            return redirect('generate_pdf')
+        except Exception as e:
+            logger.error(f"Allgemeiner Fehler beim Verarbeiten der PDF-Erstellung oder beim Speichern der Rechnung: {str(e)}")
+            messages.error(request, "Ein Fehler ist aufgetreten. Bitte versuchen Sie es später noch einmal.")
+            return redirect('generate_pdf')
+
+    # Formular anzeigen
+    return render(request, 'pdf/index.html')
+
+

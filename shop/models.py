@@ -1,9 +1,8 @@
-from django.db import models
+from django.db import models, transaction
 from django.contrib.auth.models import User
 from django.forms import ValidationError
 from django.utils import timezone
 from decimal import Decimal
-import uuid
 from PIL import Image
 
 def validate_image(image):
@@ -212,3 +211,27 @@ class Complaint(models.Model):
         else:
             new_number = 1
         return f"{date_str}-R-{new_number:04d}"
+
+
+def invoice_upload_to(instance, filename):
+    # Dynamischer Pfad basierend auf dem zugehörigen Kunden (falls vorhanden)
+    customer_username = instance.order.customer.user.username if instance.order.customer.user else 'anonymous'
+    return f'invoices/{customer_username}/{filename}'
+
+class Invoice(models.Model):
+    invoice_id = models.CharField(max_length=50, blank=True, null=True, unique=True)
+    customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    pdf = models.FileField(upload_to=invoice_upload_to, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Rechnung {self.id} für Bestellung {self.order.order_id}"
+
+    @staticmethod
+    def get_next_invoice_id():
+        last_invoice = Invoice.objects.all().order_by('-id').first()
+        last_number = last_invoice.id if last_invoice else 0
+        next_number = last_number + 1
+        return f'R-{next_number}'
