@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Rechnung {{ rechnungsnummer }}</title>
+  <title>Rechnung {{ invoiceNr }}</title>
   <style>
     @page {
       size: A4;
@@ -90,24 +90,27 @@
       padding-top: 5px;
     }
   </style>
-
 </head>
 <body>
   <div class="container">
     <div class="header">
-      <h1>Rechnung {{ rechnungsnummer }}</h1>
-      <p>{{ seller_name }}</p>
-      <p>{{ straße_nr }}</p>
-      <p>{{ plz }}</p>
-      <p>Rechnungsdatum: {{ rechnungsdatum }}</p>
+      <h1>Rechnung {{ invoiceNr }}</h1>
+      <!-- Hardcoded sender information -->
+      <p>Nordlicht Design & Coding</p>
+      <p>Christian-IV-Straße 12, 25348 Glückstadt</p>
+      <p>Deutschland</p>
+      <p>Telefon: 0151/61538100</p>
+      <p>E-Mail: info@nordlichtdc.de</p>
+      <p>Rechnungsdatum: {{ invoiceDate }}</p>
       <br>
-      <p>Kunde: {{ kunde }}</p>
-      <p>Adresse: {{ adresse }}</p>
+      <!-- Client information from form -->
+      <p>Kunde: {{ client.companyName }}</p>
+      <p>Adresse: {{ client.address.streetNr }}, {{ client.address.place }}</p>
     </div>
 
     <div class="text-before">
       <h2>Rechnung</h2>
-      <p>{{ text_before }}</p>
+      <p>{{ textBefore }}</p>
     </div>
 
     <div class="details">
@@ -125,35 +128,31 @@
         </thead>
         <tbody>
           {% for position in positions %}
-          <tr>
-            <td>{{ position.position }}</td>
-            <td>{{ position.description }}</td>
-            <td>{{ position.quantity }}</td>
-            <td>{{ position.unit }}</td>
-            <td>{{ position.unit_price }}</td>
-            <td>{{ position.total_price }}</td>
-          </tr>
+            <tr>
+              <td>{{ position.position }}</td>
+              <td>{{ position.description }}</td>
+              <td>{{ position.quantity }}</td>
+              <td>{{ position.unit }}</td>
+              <td>{{ position.unitPrice }}</td>
+              <td>{{ position.totalPrice }}</td>
+            </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
 
     <div class="text-after">
-      <p>{{ text_after }}</p>
-    </div>
-
-    <div class="bank-details">
-      <h2>Bankverbindung</h2>
-      <p>Bankname: {{ seller_bank_name }}</p>
-      <p>IBAN: {{ seller_iban }}</p>
-      <p>BIC: {{ seller_bic }}</p>
-      <p>USt-ID: {{ seller_ustid }}</p>
-      <p>Kontoinhaber: {{ seller_account_holder }}</p>
-      <p>Verwendungszweck: {{ suggested_purpose }}</p>
+      <p>{{ textAfter }}</p>
     </div>
 
     <div class="footer">
-      <p>Vielen Dank für Ihren Einkauf!</p>
+      <div class="bank-details">
+        <p>Bankverbindung:</p>
+        <p>Bankname: Deutsche Kreditbank AG</p>
+        <p>IBAN: DE36 1203 0000 0000 0000</p>
+        <p>BIC: BYLADEM1001</p>
+      </div>
+      <p>Vielen Dank für Ihr Vertrauen!</p>
     </div>
   </div>
 </body>
