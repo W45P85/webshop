@@ -84,14 +84,12 @@ class Order(models.Model):
     def __str__(self):
         return str(self.id) if self.id is not None else ''
     
+    @property
     def get_cart_total(self):
         ordered_articles = self.orderdarticle_set.all()
         cart_total = Decimal('0.00')
-        
         for ordered_article in ordered_articles:
-            total = ordered_article.get_total
-            cart_total += total
-            
+            cart_total += ordered_article.get_total
         return cart_total
 
     @property
@@ -216,7 +214,7 @@ class Complaint(models.Model):
 
 
 def invoice_upload_to(instance, filename):
-    # Dieser Pfad kann entfernt werden, wenn wir den Pfad manuell setzen.
+    # Dynamischer Pfad basierend auf dem zugehörigen Kunden (falls vorhanden)
     customer_username = instance.order.customer.user.username if instance.order.customer.user else 'anonymous'
     return f'invoices/{customer_username}/{filename}'
 
@@ -224,7 +222,7 @@ class Invoice(models.Model):
     invoice_id = models.CharField(max_length=50, blank=True, null=True, unique=True)
     customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True)
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    pdf = models.FileField(upload_to=invoice_upload_to, null=True, blank=True)  # Falls redundant, entferne `upload_to=invoice_upload_to`
+    pdf = models.FileField(upload_to=invoice_upload_to, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -26,7 +26,7 @@ from urllib.parse import unquote
 from django.db.models.signals import pre_save
 from xhtml2pdf import pisa
 from io import BytesIO
-from django.template.loader import render_to_string, get_template
+from django.template.loader import render_to_string
 
 logger = logging.getLogger(__name__)
 
@@ -998,77 +998,3 @@ def generate_pdf(request):
     return render(request, 'pdf/index.html')
 
 
-@login_required
-def generate_invoice(request, order_id):
-    order = get_object_or_404(Order, order_id=order_id)
-
-    # Prüfen, ob eine Rechnung für die Bestellung bereits existiert
-    existing_invoice = Invoice.objects.filter(order=order).first()
-    if existing_invoice:
-        # Rechnung existiert bereits, zur Rechnungsseite umleiten
-        return redirect('invoice_detail', invoice_id=existing_invoice.id)
-
-    # Daten für die Rechnung sammeln
-    customer = order.customer
-    ordered_articles = OrderdArticle.objects.filter(order=order)
-    address = Address.objects.filter(order=order).first()
-
-    # Eine neue Rechnung erstellen
-    invoice = Invoice.objects.create(
-        invoice_id=Invoice.get_next_invoice_id(),
-        customer=customer,
-        order=order
-    )
-
-    # Template laden
-    template_path = 'pdf/invoice_template.html'
-    context = {
-        'invoice': invoice,
-        'order': order,
-        'customer': customer,
-        'ordered_articles': ordered_articles,
-        'address': address,
-    }
-
-    # Render the HTML template to a string
-    template = get_template(template_path)
-    html = template.render(context)
-
-    # Create a BytesIO buffer to receive the PDF output
-    buffer = BytesIO()
-
-    # Generate PDF from HTML
-    pisa_status = pisa.CreatePDF(html, dest=buffer)
-
-    # Check if there was an error
-    if pisa_status.err:
-        return HttpResponse('Fehler beim Erstellen der PDF-Datei: <pre>' + html + '</pre>')
-
-    # Save the PDF in the buffer
-    buffer.seek(0)
-    # Save the buffer content to the FileField
-    invoice.pdf.save(f'{invoice.invoice_id}.pdf', buffer, save=True)
-
-    # Return a response with the PDF file
-    buffer.seek(0)
-    response = HttpResponse(buffer, content_type='application/pdf')
-    response['Content-Disposition'] = f'inline; filename="invoice_{invoice.invoice_id}.pdf"'
-
-    return response
-
-
-
-def invoice_detail(request, invoice_id):
-    invoice = get_object_or_404(Invoice, id=invoice_id)
-    order = invoice.order
-    ordered_articles = OrderdArticle.objects.filter(order=order)
-    address = Address.objects.filter(order=order).first()
-
-    ctx = {
-        'invoice': invoice,
-        'order': order,
-        'ordered_articles': ordered_articles,
-        'address': address,
-        'total_cost': order.get_cart_total(),
-    }
-    return render(request, 'pdf/invoice_detail.html', ctx)

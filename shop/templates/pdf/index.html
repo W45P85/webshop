@@ -8,7 +8,37 @@
     <form method="post" action="{% url 'generate_pdf' %}" class="needs-validation" novalidate>
         {% csrf_token %}
 
-        <!-- Verkäufer Section entfernt, da hardcoded -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5">Verkäufer</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="seller_name">Name:</label>
+                    <input type="text" id="seller_name" name="seller[personName]" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="seller_street">Straße & Nr.:</label>
+                    <input type="text" id="seller_street" name="seller[address][streetNr]" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="seller_place">PLZ & Ort:</label>
+                    <input type="text" id="seller_place" name="seller[address][place]" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="seller_phone">Telefon:</label>
+                    <input type="text" id="seller_phone" name="seller[contacts][phone]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_email">E-Mail:</label>
+                    <input type="email" id="seller_email" name="seller[contacts][email]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_web">Webseite:</label>
+                    <input type="url" id="seller_web" name="seller[contacts][web]" class="form-control">
+                </div>
+            </div>
+        </div>
 
         <div class="card mb-4">
             <div class="card-header">
@@ -16,7 +46,7 @@
             </div>
             <div class="card-body">
                 <div class="form-group">
-                    <label for="client_name">Firma oder Name:</label>
+                    <label for="client_name">Firma:</label>
                     <input type="text" id="client_name" name="client[companyName]" class="form-control" required>
                 </div>
                 <div class="form-group">
@@ -78,7 +108,37 @@
             </div>
         </div>
 
-        <!-- Bankverbindung entfernt, da hardcoded -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2 class="h5">Bankverbindung</h2>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label for="seller_bank_name">Bankname:</label>
+                    <input type="text" id="seller_bank_name" name="seller[bankAccount][bankName]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_iban">IBAN:</label>
+                    <input type="text" id="seller_iban" name="seller[bankAccount][iban]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_bic">BIC:</label>
+                    <input type="text" id="seller_bic" name="seller[bankAccount][bic]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_ustid">USt-ID:</label>
+                    <input type="text" id="seller_ustid" name="seller[bankAccount][ustid]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="seller_account_holder">Kontoinhaber:</label>
+                    <input type="text" id="seller_account_holder" name="seller[bankAccount][accountHolder]" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="suggested_purpose">Verwendungszweck:</label>
+                    <input type="text" id="suggested_purpose" name="suggestedPurpose" class="form-control">
+                </div>
+            </div>
+        </div>
 
         <div class="form-group text-center">
             <button type="submit" name="generate_pdf" id="generate_pdf" value="PDF erstellen" class="btn btn-primary">PDF erstellen</button>

@@ -23,9 +23,7 @@ urlpatterns = [
     path('mark-delivered/', views.mark_delivered, name='mark_delivered'),
     
     # PDF
-    path('generate_pdf/', views.generate_pdf, name='generate_pdf'),                                 # Über Formular zur Rechnungserstellung
-    path('invoice/<int:invoice_id>/', views.invoice_detail, name='invoice_detail'),                 # Rechnung durch Button auf pending_orders.html
-    path('generate_invoice/<str:order_id>/', views.generate_invoice, name='generate_invoice'),      # Rechnungsdetails
+    path('generate_pdf/', views.generate_pdf, name='generate_pdf'),
     
     # Rating
     path('ratings/', include('star_ratings.urls', namespace='ratings')),
