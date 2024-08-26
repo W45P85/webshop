@@ -219,7 +219,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {
         'file': {
-            'level': 'DEBUG',
+            'level': 'WARNING',  # Setze das Level auf WARNING, um nur Warnungen und Fehler zu loggen
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'debug.log'),
         },
@@ -227,9 +227,10 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['file'],
-            'level': 'DEBUG',
+            'level': 'WARNING',  # Setze das Level auf WARNING
             'propagate': True,
         },
     },
 }
+
 

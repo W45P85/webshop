@@ -330,6 +330,7 @@ def bestellen(request):
         else:
             return HttpResponseBadRequest("Invalid cart total format")
 
+        # Set the order ID before saving
         order.order_id = uuid.uuid4()
         order.order_date = timezone.now()
         order.done = True
@@ -337,8 +338,8 @@ def bestellen(request):
         
         paypal_dict = {
             "business": os.environ.get('PAYPAL_BUSINESS'),
-            "amount": format(order.get_cart_total),
-            "invoice": order.order.id,
+            "amount": format(order.get_cart_total(), '.2f'),  # Correctly call the method
+            "invoice": order.order_id,
             "currency_code": os.environ.get('PAYPAL_CURRENCY'),
             "notify_url": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_NOTIFY_URL'))),
             "return": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_RETURN_URL'))),
@@ -346,8 +347,6 @@ def bestellen(request):
         }
 
         paypal_form = PayPalPaymentsForm(initial=paypal_dict)
-        # ctx = {"form": paypal_form}
-
         order_url = str(order.order_id)
         messages.success(request, mark_safe(
             f"Vielen Dank für Ihre Bestellung: <a href='/order/{order_url}'>{order_url}</a>"
