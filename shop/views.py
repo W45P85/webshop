@@ -16,7 +16,7 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q, F, FloatField, ExpressionWrapper
 from datetime import timedelta
-from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm, ComplaintForm, OrderSearchForm
+from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm, ComplaintForm, OrderSearchForm, MarkDeliveredForm
 from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
 from django.http import HttpResponseNotFound, JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
@@ -711,22 +711,53 @@ def pending_orders(request):
     complained_orders = Complaint.objects.select_related('order__customer').filter(order__status='Complained').order_by('-created_at')
     cancelled_orders = Order.objects.filter(status='Cancelled').order_by('-order_date')
 
-    # Formular zum Setzen des Status auf "dispatched" und Speichern der Tracking-Nummer
     if request.method == 'POST':
-        form = TrackingNumberForm(request.POST)
-        if form.is_valid():
-            order_id = form.cleaned_data['order_id']
-            tracking_number = form.cleaned_data['tracking_number']
+        # Debugging-Ausgabe: Überprüfe, welche POST-Daten gesendet wurden
+        print(f"DEBUG: POST data received: {request.POST}")
 
-            # Suche die Bestellung und setze den Status auf "dispatched" und speichere die Tracking-Nummer
-            order = get_object_or_404(Order, order_id=order_id, status='Pending')
-            order.status = 'Dispatched'
-            order.tracking_number = tracking_number
-            order.save()
+        if 'tracking_number' in request.POST:
+            # Formular zum Setzen des Status auf "dispatched" und Speichern der Tracking-Nummer
+            form = TrackingNumberForm(request.POST)
+            if form.is_valid():
+                order_id = form.cleaned_data['order_id']
+                tracking_number = form.cleaned_data['tracking_number']
+                
+                print(f"DEBUG: Setting order {order_id} to dispatched with tracking number {tracking_number}")
+                
+                try:
+                    order = Order.objects.get(order_id=order_id, status='Pending')
+                    order.status = 'Dispatched'
+                    order.tracking_number = tracking_number
+                    order.shipping_date = timezone.now()
+                    order.save()
+                except Order.DoesNotExist:
+                    print(f"DEBUG: No Order found with order_id={order_id} and status='Pending'")
+                    return HttpResponseNotFound("Order not found.")
 
-            return redirect('pending_orders')
+                return redirect('pending_orders')
+        elif 'order_id' in request.POST and 'tracking_number' not in request.POST:
+            # Formular zum Setzen des Lieferdatums auf das aktuelle Datum und Status auf "Delivered"
+            delivery_form = MarkDeliveredForm(request.POST)
+            if delivery_form.is_valid():
+                order_id = delivery_form.cleaned_data['order_id']
+                
+                print(f"DEBUG: Marking order {order_id} as delivered")
+
+                try:
+                    order = Order.objects.get(order_id=order_id, status='Dispatched')
+                    order.status = 'Delivered'
+                    order.delivery_date = timezone.now()
+                    order.save()
+                except Order.DoesNotExist:
+                    print(f"DEBUG: No Order found with order_id={order_id} and status='Dispatched'")
+                    return HttpResponseNotFound("Order not found.")
+
+                return redirect('pending_orders')
+            else:
+                print(f"DEBUG: Delivery form is not valid. Errors: {delivery_form.errors}")
     else:
         form = TrackingNumberForm()
+        delivery_form = MarkDeliveredForm()
 
     ctx = {
         'pending_orders': pending_orders,
@@ -735,6 +766,7 @@ def pending_orders(request):
         'complained_orders': complained_orders,
         'cancelled_orders': cancelled_orders,
         'form': form,
+        'delivery_form': delivery_form,
     }
     return render(request, 'shop/pending_orders.html', ctx)
 

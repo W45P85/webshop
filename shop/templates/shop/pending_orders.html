@@ -90,7 +90,7 @@
                             <tr>
                                 <td><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></td>
                                 <td>{{ order.customer.user.email }}</td>
-                                <td>{{ order.order_date }}</td>
+                                <td>{{ order.shipping_date }}</td>
                                 <td>
                                     {% with address=order.address_set.first %}
                                         {% if address %}
@@ -102,8 +102,9 @@
                                 </td>
                                 <td>{{ order.tracking_number }}</td>
                                 <td>
-                                    <form method="post" action="{% url 'mark_delivered' %}" class="d-inline">
+                                    <form method="post" action="{% url 'pending_orders' %}" class="d-inline">
                                         {% csrf_token %}
+                                        {{ delivery_form.order_id }}
                                         <input type="hidden" name="order_id" value="{{ order.order_id }}">
                                         <button type="submit" class="btn btn-primary">Geliefert</button>
                                     </form>
@@ -135,7 +136,7 @@
                             <tr>
                                 <td><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></td>
                                 <td>{{ order.customer.user.email }}</td>
-                                <td>{{ order.order_date }}</td>
+                                <td>{{ order.delivery_date }}</td>
                                 <td>
                                     {% with address=order.address_set.first %}
                                         {% if address %}

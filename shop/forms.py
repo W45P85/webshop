@@ -187,6 +187,14 @@ class TrackingNumberForm(forms.Form):
         self.fields['tracking_number'].label = 'Tracking Number'
 
 
+class MarkDeliveredForm(forms.Form):
+    order_id = forms.CharField(widget=forms.HiddenInput())
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['order_id'].widget.attrs.update({'class': 'form-control'})
+
+
 class OrderSearchForm(forms.Form):
     search_term = forms.CharField(required=False, label='Suche Bestellungen', max_length=100)
     

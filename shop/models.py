@@ -79,7 +79,9 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, default='Pending')
     tracking_number = models.CharField(max_length=100, blank=True, null=True)
+    shipping_date = models.DateTimeField(null=True, blank=True)
     shipping_provider = models.CharField(max_length=100, blank=True, null=True)
+    delivery_date = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
         return str(self.id) if self.id is not None else ''
