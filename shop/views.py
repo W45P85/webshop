@@ -2,6 +2,8 @@ import json
 import os
 import uuid
 import logging
+import base64
+from django.conf import settings
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.files.base import ContentFile
 from django.db import IntegrityError
@@ -1050,20 +1052,28 @@ def generate_invoice(request, order_id):
         customer=customer,
         order=order
     )
+    
+    # Bildpfad
+    logo_path = os.path.join(settings.STATIC_ROOT, 'img', 'header_invoice.jpg')
+
+    # Bild in Base64 konvertieren
+    with open(logo_path, 'rb') as image_file:
+        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
 
     # Template laden
     template_path = 'pdf/invoice_template.html'
-    context = {
+    ctx = {
         'invoice': invoice,
         'order': order,
         'customer': customer,
         'ordered_articles': ordered_articles,
         'address': address,
+        'base64_logo': base64_image,
     }
 
     # Render the HTML template to a string
     template = get_template(template_path)
-    html = template.render(context)
+    html = template.render(ctx)
 
     # Create a BytesIO buffer to receive the PDF output
     buffer = BytesIO()

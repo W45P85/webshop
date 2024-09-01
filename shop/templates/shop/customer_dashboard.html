@@ -48,6 +48,7 @@
                     <th scope="col">Bestelldatum</th>
                     <th scope="col">Status</th>
                     <th scope="col">Tracking-Nummer</th>
+                    <th scope="col">Versanddatum</th>
                     <th scope="col">Artikel</th>
                     <th scope="col">Menge</th>
                     <th scope="col" class="text-end">Preis</th>
@@ -59,7 +60,7 @@
                         <td>
                             <a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a>
                         </td>
-                        <td>{{ order.order_date }}</td>
+                        <td>{{ order.order_date|date:"d.m.Y" }}</td>
                         <td>{{ order.status }}</td>
                         <td>
                             {% if order.tracking_number %}
@@ -68,6 +69,11 @@
                                 noch nicht versendet
                             {% endif %}
                         </td>
+                        {% if order.delivery_date %}
+                        <td>{{ order.delivery_date|date:"d.m.Y" }}</td>
+                        {% else %}
+                        <td>-</td>
+                        {% endif %}
                         <td colspan="3">
                             <table class="table table-borderless mb-0">
                                 <tbody>
