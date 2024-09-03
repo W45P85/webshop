@@ -59,7 +59,7 @@ class OrderAdmin(admin.ModelAdmin):
         return obj.customer.user.email if obj.customer and obj.customer.user else "Unknown"
 
     def get_cart_total(self, obj):
-        return obj.get_cart_total
+        return obj.get_cart_total()
 
     customer_email.short_description = 'Customer Email'
     get_cart_total.short_description = 'Total'
@@ -94,12 +94,12 @@ class OrderAdmin(admin.ModelAdmin):
         else:
             form = TrackingNumberForm()
 
-        context = {
+        ctx = {
             'orders': orders,
             'form': form,
             'title': 'Pending Orders'
         }
-        return render(request, 'admin/pending_orders.html', context)
+        return render(request, 'admin/pending_orders.html', ctx)
 
 @admin.register(OrderdArticle)
 class OrderdArticleAdmin(admin.ModelAdmin):
