@@ -48,6 +48,7 @@ urlpatterns = [
     path('pending-orders/', views.pending_orders, name='pending_orders'),
     path('complaint/<str:complaint_id>/', views.complaint_detail, name='complaint_detail'),
     path('order/delete/<uuid:order_id>/', views.delete_order, name='delete_order'),
+    path('update_shipping/<uuid:order_id>/', views.update_shipping_status, name='update_shipping_status'),
 
     # Admin
     path('admin/', admin.site.urls, name="django-admin"),

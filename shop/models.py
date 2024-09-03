@@ -60,7 +60,7 @@ class Article(models.Model):
     length = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     width = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     height = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    weight  = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Units (e.g., grams, kilograms)
+    weight  = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Units (kilograms)
 
     # Calculated volume (based on provided units)
     @property
@@ -94,6 +94,7 @@ class Order(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, default='Pending')
     deleted = models.BooleanField(default=False)
     tracking_number = models.CharField(max_length=100, blank=True, null=True)
+    shipment_status = models.CharField(max_length=50, blank=True, null=True)
     shipping_date = models.DateTimeField(null=True, blank=True)
     shipping_provider = models.CharField(max_length=100, blank=True, null=True)
     delivery_date = models.DateTimeField(null=True, blank=True)

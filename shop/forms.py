@@ -233,3 +233,53 @@ class ComplaintForm(forms.ModelForm):
             if width > 2000 or height > 2000:
                 raise forms.ValidationError('Das Bild ist zu groß. Maximal 2000x2000 Pixel.')
         return image
+
+
+
+class ShippingForm(forms.Form):
+    recipient_name = forms.CharField(label="Empfängername", max_length=100)
+    street_address = forms.CharField(label="Straße und Hausnummer", max_length=200)
+    city = forms.CharField(label="Stadt", max_length=100)
+    postal_code = forms.CharField(label="Postleitzahl", max_length=20)
+    country = forms.CharField(label="Land", max_length=100)
+    
+    shipping_method = forms.ChoiceField(
+        label="Versandart",
+        choices=[
+            ('standard', 'Standardversand'),
+            ('express', 'Expressversand'),
+            ('overnight', 'Overnight')
+        ]
+    )
+    
+    insurance = forms.BooleanField(label="Versicherung hinzufügen", required=False)
+    insurance_amount = forms.DecimalField(label="Versicherungsbetrag", max_digits=10, decimal_places=2, required=False)
+    
+    weight = forms.DecimalField(label="Gewicht (kg)", max_digits=5, decimal_places=2)
+    length = forms.DecimalField(label="Länge (cm)", max_digits=5, decimal_places=1)
+    width = forms.DecimalField(label="Breite (cm)", max_digits=5, decimal_places=1)
+    height = forms.DecimalField(label="Höhe (cm)", max_digits=5, decimal_places=1)
+    
+    customs_declaration = forms.CharField(label="Zollerklärung", max_length=500, required=False)
+    contents_description = forms.CharField(label="Beschreibung des Inhalts", max_length=500, required=False)
+    goods_value = forms.DecimalField(label="Warenwert (€)", max_digits=10, decimal_places=2, required=False)
+    
+    pickup_date = forms.DateField(label="Abholdatum", required=False)
+    pickup_time = forms.TimeField(label="Abholzeit", required=False)
+    
+    additional_notes = forms.CharField(
+        label="Zusätzliche Hinweise", 
+        widget=forms.Textarea, 
+        required=False
+    )
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Bootstrap-Styling für alle Felder hinzufügen
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'form-check-input'
+            elif isinstance(field.widget, (forms.TextInput, forms.NumberInput, forms.Select, forms.Textarea)):
+                field.widget.attrs['class'] = 'form-control'
+            elif isinstance(field.widget, (forms.DateInput, forms.TimeInput)):
+                field.widget.attrs['class'] = 'form-control'

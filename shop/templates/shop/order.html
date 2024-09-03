@@ -10,9 +10,9 @@
                     <div class="d-flex justify-content-between">
                         <h3 class="fw-bold">Bestellübersicht</h3>
                         {% if order.status == 'Pending' and not order.deleted and not complaint.complaint_id %}
-                            <a href="{% url 'delete_order' order_id=order.order_id %}" class="btn btn-danger">Löschen</a>
+                            <a href="{% url 'delete_order' order_id=order.order_id %}" class="btn btn-danger">Bestellung löschen</i></i></a>
                         {% elif order.status != 'Cancelled' %}
-                            <a href="{% url 'complaint_form' order_id=order.order_id %}" class="btn btn-danger">Reklamieren</a>
+                            <a href="{% url 'complaint_form' order_id=order.order_id %}" class="btn btn-danger">Lieferung Reklamieren</a>
                         {% endif %}
 
 

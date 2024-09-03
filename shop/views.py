@@ -18,7 +18,7 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q, F, FloatField, ExpressionWrapper
 from datetime import timedelta
-from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm, ComplaintForm, OrderSearchForm, MarkDeliveredForm
+from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm, ComplaintForm, OrderSearchForm, MarkDeliveredForm, ShippingForm
 from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
 from django.http import HttpResponseNotFound, JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
@@ -29,6 +29,7 @@ from django.db.models.signals import pre_save
 from xhtml2pdf import pisa
 from io import BytesIO
 from django.template.loader import render_to_string, get_template
+from .dhl_utils import send_package_with_dhl
 
 logger = logging.getLogger(__name__)
 
@@ -1115,7 +1116,6 @@ def invoice_detail(request, invoice_id):
     return render(request, 'pdf/invoice_detail.html', ctx)
 
 
-
 @login_required
 def generate_delivery_note(request, order_id):
     order = get_object_or_404(Order, order_id=order_id)
@@ -1222,3 +1222,54 @@ def delete_order(request, order_id):
             messages.error(request, "Diese Bestellung kann nicht storniert werden.")
 
     return redirect('order',  id=order.order_id)
+
+
+
+@login_required
+def update_shipping_status(request, order_id):
+    order = get_object_or_404(Order, order_id=order_id)  # hole die Order anhand der order_id
+
+    # Adresse aus der Datenbank holen (erste Adresse der Bestellung verwenden oder None)
+    address = order.address_set.first() if order.address_set.exists() else None
+
+    # Artikel aus der Datenbank holen
+    ordered_article = order.orderdarticle_set.first()
+    article = ordered_article.article if ordered_article else None
+
+    # Wenn die Methode POST ist, wird das Formular validiert und gesendet
+    if request.method == 'POST':
+        form = ShippingForm(request.POST)
+        if form.is_valid():
+            # Versende die Bestellung über DHL
+            success = send_package_with_dhl(order)
+            
+            if success:
+                order.shipment_status = 'Shipped'
+                order.save()
+                return redirect('order_detail', order_id=order.order_id)
+            else:
+                form.add_error(None, "Fehler beim Versand über DHL.")
+    else:
+        # Initialisiere das Formular mit den Daten aus der Bestellung
+        initial_data = {
+            'recipient_name': f"{order.customer.first_name} {order.customer.last_name}" if order.customer else '',
+            'street_address': address.address if address else '',
+            'city': address.city if address else '',
+            'postal_code': address.zipcode if address else '',
+            'country': address.country if address else '',
+            'shipping_method': order.shipment_status,  # Beispiel wie die Versandart vorbelegt wird
+            'tracking_number': order.tracking_number,
+            'shipping_provider': order.shipping_provider,
+            'shipping_date': order.shipping_date,
+            'delivery_date': order.delivery_date,
+            'weight': article.weight,
+            'length': article.length,
+            'height': article.height,
+            'width': article.width,
+            'volume': article.volume,
+            'goods_value': order.get_cart_total(),
+            # weitere Felder...
+        }
+        form = ShippingForm(initial=initial_data)
+
+    return render(request, 'shop/update_shipping_status.html', {'form': form, 'order': order})

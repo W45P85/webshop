@@ -167,6 +167,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Paypal
 PAYPAL_TEST = True
 
+# DHL
+DHL_API_KEY=os.environ.get('DHL_API_KEY')
+DHL_API_SECRET=os.environ.get('DHL_API_SECRET')
+
+
 # Ratings
 STAR_RATINGS_RERATE = False
 STAR_RATINGS_CLEARABLE = False
