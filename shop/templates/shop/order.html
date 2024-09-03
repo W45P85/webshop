@@ -9,7 +9,13 @@
                 <div class="shadow p-3 mb-4">
                     <div class="d-flex justify-content-between">
                         <h3 class="fw-bold">Bestellübersicht</h3>
-                        <a href="{% url 'complaint_form' order_id=order.order_id %}" class="btn btn-danger">Reklamieren</a>
+                        {% if order.status == 'Pending' and not order.deleted and not complaint.complaint_id %}
+                            <a href="{% url 'delete_order' order_id=order.order_id %}" class="btn btn-danger">Löschen</a>
+                        {% elif order.status != 'Cancelled' %}
+                            <a href="{% url 'complaint_form' order_id=order.order_id %}" class="btn btn-danger">Reklamieren</a>
+                        {% endif %}
+
+
                     </div>
                     <div class="row">
                         <div class="col-md-6">

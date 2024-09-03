@@ -1198,3 +1198,27 @@ def delivery_note_detail(request, delivery_note_id):
         'total_cost': order.get_cart_total(),
     }
     return render(request, 'pdf/delivery_note_detail.html', ctx)
+
+
+def delete_order(request, order_id):
+    order = get_object_or_404(Order, order_id=order_id)
+
+    if order.status == 'Pending':
+        order.status = 'Cancelled'  # Status auf "Cancelled" setzen
+        order.deleted = True        # Bestellung als gelöscht markieren
+        order.save()
+        messages.success(request, "Die Bestellung wurde erfolgreich als gelöscht markiert.")
+    else:
+        # Überprüfen Sie den Status der Bestellung und zeigen Sie die entsprechende Nachricht an
+        if order.status == 'Cancelled':
+            messages.error(request, "Diese Bestellung wurde bereits storniert.")
+        elif order.status == 'Dispatched':
+            messages.error(request, "Diese Bestellung wurde bereits versendet und kann nicht storniert werden.")
+        elif order.status == 'complained':
+            messages.error(request, "Diese Bestellung wurde bereits reklamiert und kann nicht storniert werden.")
+        elif order.status == 'Completed':
+            messages.error(request, "Diese Bestellung wurde bereits abgeschlossen und kann nicht storniert werden.")
+        else:
+            messages.error(request, "Diese Bestellung kann nicht storniert werden.")
+
+    return redirect('order',  id=order.order_id)

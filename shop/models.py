@@ -92,6 +92,7 @@ class Order(models.Model):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, default='Pending')
+    deleted = models.BooleanField(default=False)
     tracking_number = models.CharField(max_length=100, blank=True, null=True)
     shipping_date = models.DateTimeField(null=True, blank=True)
     shipping_provider = models.CharField(max_length=100, blank=True, null=True)
@@ -234,7 +235,6 @@ class Complaint(models.Model):
 def invoice_upload_to(instance, filename):
     customer_username = instance.order.customer.user.username if instance.order.customer.user else 'anonymous'
     return f'invoices/{customer_username}/{filename}'
-
 class Invoice(models.Model):
     invoice_id = models.CharField(max_length=50, blank=True, null=True, unique=True)
     customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True)
@@ -257,7 +257,6 @@ class Invoice(models.Model):
 def delivery_note_upload_to(instance, filename):
     customer_username = instance.order.customer.user.username if instance.order.customer.user else 'anonymous'
     return f'delivery_notes/{customer_username}/{filename}'
-
 class DeliveryNote(models.Model):
     delivery_note_id = models.CharField(max_length=50, blank=True, null=True, unique=True)
     customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True)
