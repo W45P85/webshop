@@ -51,6 +51,7 @@
                                 </td>
                                 <td>
                                     <a href="{% url 'generate_invoice' order_id=order.order_id %}" class="btn btn-primary">Rechnung generieren</a>
+                                    <a href="{% url 'generate_delivery_note' order_id=order.order_id %}" class="btn btn-primary mt-2">Lieferschein generieren</a>
                                     <br>
                                     <br>
                                     <form method="post" action="{% url 'pending_orders' %}" class="d-inline">

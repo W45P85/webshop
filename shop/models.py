@@ -55,6 +55,20 @@ class Article(models.Model):
     category = models.ForeignKey('Category', on_delete=models.CASCADE, null=True, blank=True)
     article_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
     stock = models.PositiveIntegerField(default=0)
+    
+    # Dimensions (in appropriate units, e.g., centimeters)
+    length = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    width = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    height = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    weight  = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Units (e.g., grams, kilograms)
+
+    # Calculated volume (based on provided units)
+    @property
+    def volume(self):
+        if self.length and self.width and self.height:
+            return self.length * self.width * self.height
+        else:
+            return None  # Handle cases where dimensions are missing
 
     def __str__(self):
         return self.name
@@ -218,7 +232,6 @@ class Complaint(models.Model):
 
 
 def invoice_upload_to(instance, filename):
-    # Dieser Pfad kann entfernt werden, wenn wir den Pfad manuell setzen.
     customer_username = instance.order.customer.user.username if instance.order.customer.user else 'anonymous'
     return f'invoices/{customer_username}/{filename}'
 
@@ -239,3 +252,26 @@ class Invoice(models.Model):
         last_number = last_invoice.id if last_invoice else 0
         next_number = last_number + 1
         return f'R-{next_number}'
+
+
+def delivery_note_upload_to(instance, filename):
+    customer_username = instance.order.customer.user.username if instance.order.customer.user else 'anonymous'
+    return f'delivery_notes/{customer_username}/{filename}'
+
+class DeliveryNote(models.Model):
+    delivery_note_id = models.CharField(max_length=50, blank=True, null=True, unique=True)
+    customer = models.ForeignKey('Customer', on_delete=models.SET_NULL, null=True, blank=True)
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    pdf = models.FileField(upload_to=delivery_note_upload_to, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Lieferschein {self.id} für Bestellung {self.order.order_id}"
+
+    @staticmethod
+    def get_next_delivery_note_id():
+        last_note = DeliveryNote.objects.all().order_by('-id').first()
+        last_number = last_note.id if last_note else 0
+        next_number = last_number + 1
+        return f'L-{next_number}'

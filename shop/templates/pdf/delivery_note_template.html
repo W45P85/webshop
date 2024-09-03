@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Lieferschein {{ delivery_note.delivery_note_id }}</title>
+    <style>
+        /* CSS-Styles, ähnlich wie im Rechnungs-Template */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        .container {
+            width: 100%;
+            margin: auto;
+            padding: 20px;
+        }
+        .delivery-box {
+            width: 100%;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+            background: #ffffff;
+        }
+        .header {
+            text-align: center;
+        }
+        .header img {
+            max-width: 150px;
+            height: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 5px;
+        }
+        table th, table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        table th {
+            background: #f4f4f4;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .address p, .order-info p {
+            margin: 0;
+            padding: 0;
+            line-height: 1.4;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="delivery-box">
+            <div class="header">
+                <img src="data:image/jpeg;base64,{{ base64_logo }}" alt="Firmenlogo"/>
+            </div>
+            <h1 style="text-align: center; font-size: 24px;">Lieferschein</h1>
+
+            <!-- Barcode -->
+            <div style="text-align: center">
+                <pdf:barcode value="{{ order.order_id }}" type="code128" humanreadable="1" align="baseline" />
+            </div>
+
+            <!-- Lieferadresse und Bestelldetails -->
+            <table style="margin-bottom: 5px;">
+                <tr>
+                    <td style="width: 50%">
+                        <div class="address">
+                            <p style="font-weight: bold; font-size: 16px">Lieferadresse</p>
+                            <p>{{ customer.user.first_name }} {{ customer.user.last_name }}</p>
+                            <p>{{ address.address }}</p>
+                            <p>{{ address.zipcode }} {{ address.city }}</p>
+                            <p>{{ address.country }}</p>
+                        </div>
+                    </td>
+                    <td style="width: 50%">
+                        <div class="order-info">
+                            <p style="font-weight: bold; font-size: 16px">Bestelldetails</p>
+                            <p>Bestellnummer: {{ order.order_id }}</p>
+                            <p>Bestelldatum: {{ order.order_date|date:"d.m.Y" }}</p>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <!-- Bestellte Artikel -->
+            <div class="article-table">
+                <h2>Bestellte Artikel</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Artikel</th>
+                            <th>Menge</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for article in ordered_articles %}
+                        <tr>
+                            <td>{{ article.article.name }}</td>
+                            <td>{{ article.quantity }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="footer">
+                <p>Vielen Dank für Ihre Bestellung!</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

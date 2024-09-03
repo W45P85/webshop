@@ -25,11 +25,12 @@
                        {{ article.price }} € <small></small>
                     </h2>
                     {% if request.user.is_superuser or request.user|is_group_member:"Sellers" %}
-                        <button data-artikel={{article.id}} data-action="bestellen" class="btn btn-outline-success warenkorb-bestellen" title="Dem Warenkorb hinzufügen"><i class="fas fa-shopping-cart fa"></i></button>
-                        <a href="{% url 'edit_article' article.id %}" class="btn btn-primary" title="Artikel bearbeiten"><i class="fas fa-edit"></i></a>
-                        <a href="{% url 'delete_article_confirmation' article.id %}" class="btn btn-danger" title="Artikel löschen"><i class="fa-solid fa-trash"></i></a>
+                        <button data-artikel={{article.id}} data-action="bestellen" class="btn btn-outline-success warenkorb-bestellen" title="Dem Warenkorb hinzufügen">Warenkorb <i class="fas fa-shopping-cart fa"></i></button>
+                        <a href="{% url 'edit_article' article.id %}" class="btn btn-primary" title="Artikel bearbeiten">Bearbeiten <i class="fas fa-edit"></i></a>
+                        <a href="{% url 'delete_article_confirmation' article.id %}" class="btn btn-danger" title="Artikel löschen">Löschen <i class="fa-solid fa-trash"></i></a>
                     {% else %}
-                        <button data-artikel={{article.id}} data-action="bestellen" class="btn btn-outline-success warenkorb-bestellen"><i class="fas fa-shopping-cart fa"></i></button>
+                    <button data-artikel="{{article.id}}" data-action="bestellen" class="btn btn-outline-success warenkorb-bestellen">Warenkorb <i class="fas fa-shopping-cart fa"></i>
+                    </button>
                     {% endif %}
                     <h3 class="box-title mt-5">Kategorie</h3>
                     <ul class="list-unstyled">
@@ -59,20 +60,20 @@
                                     <td>{{ article.stock }}</td>
                                 </tr>
                                 <tr>
-                                    <td>Seat Lock Included</td>
-                                    <td>Yes</td>
+                                    <td>Länge in cm</td>
+                                    <td>{{ article.length }}</td>
                                 </tr>
                                 <tr>
-                                    <td>Type</td>
-                                    <td>Office Chair</td>
+                                    <td>Breite in cm</td>
+                                    <td>{{ article.width }}</td>
                                 </tr>
                                 <tr>
-                                    <td>Style</td>
-                                    <td>Contemporary&amp;Modern</td>
+                                    <td>Höhe in cm</td>
+                                    <td>{{ article.height }}</td>
                                 </tr>
                                 <tr>
-                                    <td>Wheels Included</td>
-                                    <td>Yes</td>
+                                    <td>Volumen in cm³</td>
+                                    <td>{{ article.volume }}</td>
                                 </tr>
                                 <tr>
                                     <td>Upholstery Included</td>

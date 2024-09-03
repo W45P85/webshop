@@ -1,0 +1,41 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container">
+    <h2>Lieferschein Details</h2>
+    
+    <div class="card mt-3">
+        <div class="card-header">
+            Lieferschein ID: {{ delivery_note.delivery_note_id }}
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Bestellnummer: {{ delivery_note.order.order_id }}</h5>
+            <p class="card-text"><strong>Kunde:</strong> {{ delivery_note.customer.user.username }}</p>
+            <p class="card-text"><strong>Erstellt am:</strong> {{ delivery_note.created_at }}</p>
+            <p class="card-text"><strong>Aktualisiert am:</strong> {{ delivery_note.updated_at }}</p>
+            
+            <h5>Lieferadresse:</h5>
+            <p>
+                {{ address.address }}<br>
+                {{ address.zipcode }} {{ address.city }}<br>
+                {{ address.country }}
+            </p>
+
+            <h5>Bestellte Artikel:</h5>
+            <ul>
+                {% for article in ordered_articles %}
+                    <li>{{ article.article.name }} - Menge: {{ article.quantity }}</li>
+                {% endfor %}
+            </ul>
+
+            <h5>Lieferschein-PDF:</h5>
+            {% if delivery_note.pdf %}
+                <a href="{{ delivery_note.pdf.url }}" class="btn btn-primary">PDF herunterladen</a>
+            {% else %}
+                <p>PDF wurde noch nicht generiert.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

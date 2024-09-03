@@ -1098,7 +1098,7 @@ def generate_invoice(request, order_id):
     return response
 
 
-
+@login_required
 def invoice_detail(request, invoice_id):
     invoice = get_object_or_404(Invoice, id=invoice_id)
     order = invoice.order
@@ -1113,3 +1113,88 @@ def invoice_detail(request, invoice_id):
         'total_cost': order.get_cart_total(),
     }
     return render(request, 'pdf/invoice_detail.html', ctx)
+
+
+
+@login_required
+def generate_delivery_note(request, order_id):
+    order = get_object_or_404(Order, order_id=order_id)
+
+    # Prüfen, ob ein Lieferschein für die Bestellung bereits existiert
+    existing_note = DeliveryNote.objects.filter(order=order).first()
+    if existing_note:
+        # Lieferschein existiert bereits, zur Detailseite umleiten
+        return redirect('delivery_note_detail', delivery_note_id=existing_note.id)
+
+    # Daten für den Lieferschein sammeln
+    customer = order.customer
+    ordered_articles = OrderdArticle.objects.filter(order=order)
+    address = Address.objects.filter(order=order).first()
+
+    # Einen neuen Lieferschein erstellen
+    delivery_note = DeliveryNote.objects.create(
+        delivery_note_id=DeliveryNote.get_next_delivery_note_id(),
+        customer=customer,
+        order=order
+    )
+    
+    # Bildpfad
+    logo_path = os.path.join(settings.STATIC_ROOT, 'img', 'header_delivery_note.jpg')
+
+    # Bild in Base64 konvertieren
+    with open(logo_path, 'rb') as image_file:
+        base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+
+    # Template laden
+    template_path = 'pdf/delivery_note_template.html'
+    ctx = {
+        'delivery_note': delivery_note,
+        'order': order,
+        'customer': customer,
+        'ordered_articles': ordered_articles,
+        'address': address,
+        'base64_logo': base64_image,
+    }
+
+    # Render the HTML template to a string
+    template = get_template(template_path)
+    html = template.render(ctx)
+
+    # Create a BytesIO buffer to receive the PDF output
+    buffer = BytesIO()
+
+    # Generate PDF from HTML
+    pisa_status = pisa.CreatePDF(html, dest=buffer)
+
+    # Check if there was an error
+    if pisa_status.err:
+        return HttpResponse('Fehler beim Erstellen der PDF-Datei: <pre>' + html + '</pre>')
+
+    # Save the PDF in the buffer
+    buffer.seek(0)
+    # Save the buffer content to the FileField
+    delivery_note.pdf.save(f'{delivery_note.delivery_note_id}.pdf', buffer, save=True)
+
+    # Return a response with the PDF file
+    buffer.seek(0)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="delivery_note_{delivery_note.delivery_note_id}.pdf"'
+
+    return response
+
+
+@login_required
+def delivery_note_detail(request, delivery_note_id):
+    delivery_note = get_object_or_404(DeliveryNote, id=delivery_note_id)
+    order = delivery_note.order
+    ordered_articles = OrderdArticle.objects.filter(order=order)
+    address = Address.objects.filter(order=order).first()
+
+    ctx = {
+        'delivery_note': delivery_note,
+        'order': order,
+        'ordered_articles': ordered_articles,
+        'address': address,
+        'total_cost': order.get_cart_total(),
+    }
+    return render(request, 'pdf/delivery_note_detail.html', ctx)
