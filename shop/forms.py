@@ -119,10 +119,13 @@ class SearchForm(forms.Form):
 class AddArticleForm(forms.ModelForm):
     class Meta:
         model = Article
-        fields = ['name', 'description', 'price', 'img', 'category']
+        fields = ['article_number', 'name', 'description', 'price', 'img', 'category', 'stock', 'length', 'width', 'height', 'weight']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['article_number'].widget.attrs.update({'class': 'form-control'})
+        self.fields['article_number'].label = 'Artikelnummer (optional)'
+        
         self.fields['name'].widget.attrs.update({'class': 'form-control'})
         self.fields['name'].label = 'Artikelname'
 
@@ -130,19 +133,34 @@ class AddArticleForm(forms.ModelForm):
         self.fields['description'].label = 'Beschreibung'
 
         self.fields['price'].widget.attrs.update({'class': 'form-control'})
-        self.fields['price'].label = 'Preis'
+        self.fields['price'].label = 'Preis in €'
 
         self.fields['img'].widget.attrs.update({'class': 'form-control'})
         self.fields['img'].label = 'Bild'
 
         self.fields['category'].widget.attrs.update({'class': 'form-control'})
         self.fields['category'].label = 'Kategorie'
+
+        self.fields['stock'].widget.attrs.update({'class': 'form-control'})
+        self.fields['stock'].label = 'Lagerbestand in Stück'
+
+        self.fields['length'].widget.attrs.update({'class': 'form-control'})
+        self.fields['length'].label = 'Länge in cm'
+
+        self.fields['width'].widget.attrs.update({'class': 'form-control'})
+        self.fields['width'].label = 'Breite in cm'
+
+        self.fields['height'].widget.attrs.update({'class': 'form-control'})
+        self.fields['height'].label = 'Höhe in cm'
+        
+        self.fields['weight'].widget.attrs.update({'class': 'form-control'})
+        self.fields['weight'].label = 'Gewicht in kg'
 
 
 class EditArticleForm(forms.ModelForm):
     class Meta:
         model = Article
-        fields = ['name', 'description', 'price', 'img', 'category']
+        fields = ['name', 'description', 'price', 'img', 'category', 'stock', 'length', 'width', 'height', 'weight']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -153,13 +171,28 @@ class EditArticleForm(forms.ModelForm):
         self.fields['description'].label = 'Beschreibung'
 
         self.fields['price'].widget.attrs.update({'class': 'form-control'})
-        self.fields['price'].label = 'Preis'
+        self.fields['price'].label = 'Preis in €'
 
         self.fields['img'].widget.attrs.update({'class': 'form-control'})
         self.fields['img'].label = 'Bild'
 
         self.fields['category'].widget.attrs.update({'class': 'form-control'})
         self.fields['category'].label = 'Kategorie'
+        
+        self.fields['stock'].widget.attrs.update({'class': 'form-control'})
+        self.fields['stock'].label = 'Lagerbestand in Stück'
+
+        self.fields['length'].widget.attrs.update({'class': 'form-control'})
+        self.fields['length'].label = 'Länge in cm'
+
+        self.fields['width'].widget.attrs.update({'class': 'form-control'})
+        self.fields['width'].label = 'Breite in cm'
+
+        self.fields['height'].widget.attrs.update({'class': 'form-control'})
+        self.fields['height'].label = 'Höhe in cm'
+        
+        self.fields['weight'].widget.attrs.update({'class': 'form-control'})
+        self.fields['weight'].label = 'Gewicht in kg'
 
 
 class AddCategoryForm(forms.ModelForm):

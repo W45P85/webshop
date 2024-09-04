@@ -3,6 +3,7 @@ import os
 import uuid
 import logging
 import base64
+import re
 from django.conf import settings
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.files.base import ContentFile
@@ -341,7 +342,7 @@ def bestellen(request):
         
         paypal_dict = {
             "business": os.environ.get('PAYPAL_BUSINESS'),
-            "amount": format(order.get_cart_total(), '.2f'),  # Correctly call the method
+            "amount": format(order.get_cart_total(), '.2f'),
             "invoice": order.order_id,
             "currency_code": os.environ.get('PAYPAL_CURRENCY'),
             "notify_url": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_NOTIFY_URL'))),
@@ -557,24 +558,29 @@ def generate_article_number(sender, instance, **kwargs):
             new_number = 1
         instance.article_number = f"A-{new_number:05d}"
 
+
 @login_required
 @user_passes_test(is_admin_or_seller)
 def add_article(request):
-    article_number = Article.objects.all()
     if request.method == 'POST':
-        form = AddArticleForm(request.POST, request.FILES)
-        if form.is_valid():
-            article = form.save()
-            messages.success(request, 'Artikel ' + {{ article_number }} +' erfolgreich angelegt!')
+        if 'reset' in request.POST:
+            # Wenn der "Abbrechen"-Button geklickt wurde
+            messages.info(request, 'Aktion abgebrochen.')
             return redirect('add_article')
+        else:
+            # Wenn der "Speichern"-Button geklickt wurde
+            form = AddArticleForm(request.POST, request.FILES)
+            if form.is_valid():
+                article = form.save()
+                messages.success(request, f'Artikel {article.name} erfolgreich angelegt!')
+                return redirect('add_article')
     else:
         form = AddArticleForm()
 
-    articles = Article.objects.all()
+    articles = Article.objects.all().order_by()
     paginator = Paginator(articles, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-
 
     return render(request, 'shop/add_article.html', {
         'form': form,
@@ -589,11 +595,17 @@ def edit_article(request, article_id):
     article = get_object_or_404(Article, id=article_id)
 
     if request.method == 'POST':
-        form = EditArticleForm(request.POST, request.FILES, instance=article)
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Artikel erfolgreich bearbeitet!')
+        if 'reset' in request.POST:
+            # Wenn der "Abbrechen"-Button geklickt wurde
+            messages.info(request, 'Bearbeitung abgebrochen.')
             return redirect('add_article')
+        else:
+            # Wenn der "Speichern"-Button geklickt wurde
+            form = EditArticleForm(request.POST, request.FILES, instance=article)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Artikel erfolgreich bearbeitet!')
+                return redirect('add_article')
     else:
         form = EditArticleForm(instance=article)
 
@@ -1222,7 +1234,6 @@ def delete_order(request, order_id):
             messages.error(request, "Diese Bestellung kann nicht storniert werden.")
 
     return redirect('order',  id=order.order_id)
-
 
 
 @login_required
