@@ -31,6 +31,9 @@ from xhtml2pdf import pisa
 from io import BytesIO
 from django.template.loader import render_to_string, get_template
 from .dhl_utils import send_package_with_dhl
+from django.views.decorators.csrf import csrf_exempt
+from paypal.standard.models import ST_PP_COMPLETED
+from paypal.standard.ipn.signals import valid_ipn_received, invalid_ipn_received
 
 logger = logging.getLogger(__name__)
 
@@ -348,6 +351,8 @@ def bestellen(request):
             "notify_url": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_NOTIFY_URL'))),
             "return": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_RETURN_URL'))),
             "cancel_return": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_CANCEL_RETURN_URL'))),
+            "return": request.build_absolute_uri(reverse('payment_success')) + f"?order_id={order.order_id}",
+            "cancel_return": request.build_absolute_uri(reverse('payment_cancelled')),
         }
 
         paypal_form = PayPalPaymentsForm(initial=paypal_dict)
@@ -369,6 +374,60 @@ def bestellen(request):
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
         return HttpResponseServerError("An unexpected error occurred")
+
+
+@csrf_exempt
+def paypal_ipn(request):
+    if request.method == "POST":
+        # PayPal sendet IPN-Daten an diese URL
+        try:
+            # `valid_ipn_received` wird ausgelöst, wenn PayPal eine gültige Zahlung bestätigt
+            def handle_valid_ipn(sender, **kwargs):
+                ipn_obj = sender
+                # Bestellung anhand der `invoice` ID (order_id) abrufen
+                try:
+                    order = Order.objects.get(order_id=ipn_obj.invoice)
+                except Order.DoesNotExist:
+                    logger.error(f"Order with ID {ipn_obj.invoice} does not exist.")
+                    return
+
+                # Überprüfen, ob die Zahlung erfolgreich war
+                if ipn_obj.payment_status == ST_PP_COMPLETED:
+                    # Zahlung erfolgreich, Bestellung als abgeschlossen markieren
+                    order.paid = True
+                    order.payment_id = ipn_obj.txn_id  # Speichern der Transaktions-ID
+                    order.save()
+                    logger.info(f"Order {order.order_id} was paid successfully.")
+
+                else:
+                    # Zahlung fehlgeschlagen oder abgebrochen
+                    logger.warning(f"Payment for order {order.order_id} failed with status {ipn_obj.payment_status}.")
+
+            # Signale verbinden
+            valid_ipn_received.connect(handle_valid_ipn)
+            invalid_ipn_received.connect(lambda sender, **kwargs: logger.error("Invalid IPN received."))
+
+            return HttpResponse(status=200)  # PayPal muss 200 OK erhalten, um die IPN als erfolgreich zu betrachten
+
+        except Exception as e:
+            logger.error(f"Error processing PayPal IPN: {e}")
+            return HttpResponse(status=500)
+
+    return HttpResponse(status=405)
+
+
+def payment_success(request):
+    order_id = request.GET.get('order_id')
+    try:
+        order = Order.objects.get(order_id=order_id)
+    except Order.DoesNotExist:
+        return render(request, 'paypal/payment_error.html', {"message": "Order not found."})
+
+    return render(request, 'paypal/payment_success.html', {"order": order})
+
+
+def payment_cancelled(request):
+    return render(request, 'paypal/payment_cancelled.html', {"message": "Payment was cancelled."})
 
 
 @login_required(login_url='login')

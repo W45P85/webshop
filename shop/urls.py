@@ -34,6 +34,10 @@ urlpatterns = [
     path('ratings/', include('star_ratings.urls', namespace='ratings')),
     
     # payments
+    path('paypal/', include("paypal.standard.ipn.urls")),
+    path('paypal-ipn/', views.paypal_ipn, name='paypal_ipn'),  # URL für notify_url
+    path('payment-success/', views.payment_success, name='payment_success'),  # URL für return_url
+    path('payment-cancelled/', views.payment_cancelled, name='payment_cancelled'),  # URL für cancel_return_url
     # path('payment/', views.bestellen, name='payment'),
 
     # Authentication

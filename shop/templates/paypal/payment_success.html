@@ -1,0 +1,12 @@
+{% extends "shop/index.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="alert alert-success" role="alert">
+        <h4 class="alert-heading">Zahlung erfolgreich</h4>
+        <p>Vielen Dank für Ihre Bestellung! Ihre Zahlung war erfolgreich. Sie erhalten in Kürze eine Bestätigungs-E-Mail.</p>
+        <hr>
+        <a href="{% url 'home' %}" class="btn btn-primary">Zur Startseite</a>
+    </div>
+</div>
+{% endblock %}

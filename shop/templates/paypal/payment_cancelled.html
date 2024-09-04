@@ -1,0 +1,12 @@
+{% extends "shop/index.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading">Zahlung abgebrochen</h4>
+        <p>Ihre Zahlung wurde abgebrochen. Wenn Sie es noch einmal versuchen möchten, können Sie zurück zu Ihrem Warenkorb gehen.</p>
+        <hr>
+        <a href="{% url 'warenkorb' %}" class="btn btn-primary">Zurück zum Warenkorb</a>
+    </div>
+</div>
+{% endblock %}

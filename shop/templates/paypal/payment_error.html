@@ -1,0 +1,12 @@
+{% extends "shop/index.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="alert alert-danger" role="alert">
+        <h4 class="alert-heading">Zahlungsfehler</h4>
+        <p>Leider ist ein Fehler während des Zahlungsprozesses aufgetreten. Bitte versuchen Sie es später noch einmal oder kontaktieren Sie den Support.</p>
+        <hr>
+        <a href="{% url 'contact' %}" class="btn btn-primary">Kontaktieren Sie den Support</a>
+    </div>
+</div>
+{% endblock %}
