@@ -34,6 +34,7 @@ from .dhl_utils import send_package_with_dhl
 from django.views.decorators.csrf import csrf_exempt
 from paypal.standard.models import ST_PP_COMPLETED, ST_PP_PENDING
 from paypal.standard.ipn.views import ipn
+from paypal.standard.ipn.signals import valid_ipn_received
 
 
 logger = logging.getLogger(__name__)

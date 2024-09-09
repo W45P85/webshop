@@ -67,7 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (location.protocol === 'https:') {
             document.cookie = 'cart=' + JSON.stringify(cart) + ";path=/; SameSite=None; Secure";
         } else {
-            document.cookie = 'cart=' + JSON.stringify(cart) + ";path=/; SameSite=None";
+            document.cookie = 'cart=' + JSON.stringify(cart) + ";path=/";
         }
         console.log('Aktualisierter Warenkorb:', cart);
         location.reload();
