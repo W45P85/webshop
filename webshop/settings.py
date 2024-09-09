@@ -20,7 +20,8 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['drukober.pythonanywhere.com', '127.0.0.1']
+ALLOWED_HOSTS = ['drukober.pythonanywhere.com', '127.0.0.1', 'shop.nordlichtdc.de']
+CSRF_TRUSTED_ORIGINS = ['https://shop.nordlichtdc.de']
 
 
 # Security settings
@@ -28,8 +29,8 @@ ALLOWED_HOSTS = ['drukober.pythonanywhere.com', '127.0.0.1']
 #SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 #SECURE_HSTS_PRELOAD = True
 #SECURE_SSL_REDIRECT = True
-#SESSION_COOKIE_SECURE = True
-#CSRF_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
 
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024  # Maximale Größe in Bytes (hier 5 MB)
@@ -166,6 +167,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Paypal
 PAYPAL_TEST = True
+PAYPAL_CLIENT_ID = os.environ.get('PAYPAL_CLIENT_ID')
+PAYPAL_CLIENT_SECRET = os.environ.get('PAYPAL_CLIENT_SECRET')
 
 # DHL
 DHL_API_KEY=os.environ.get('DHL_API_KEY')
@@ -224,7 +227,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {
         'file': {
-            'level': 'WARNING',  # Setze das Level auf WARNING, um nur Warnungen und Fehler zu loggen
+            'level': 'DEBUG',
             'class': 'logging.FileHandler',
             'filename': os.path.join(BASE_DIR, 'debug.log'),
         },
@@ -232,9 +235,23 @@ LOGGING = {
     'loggers': {
         'django': {
             'handlers': ['file'],
-            'level': 'WARNING',  # Setze das Level auf WARNING
+            'level': 'DEBUG',
             'propagate': True,
         },
+        'paypal': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'shop.views': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        '': {  # Allgemeiner Root-Logger, der alles aufzeichnet
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            },
     },
 }
 

@@ -32,8 +32,9 @@ from io import BytesIO
 from django.template.loader import render_to_string, get_template
 from .dhl_utils import send_package_with_dhl
 from django.views.decorators.csrf import csrf_exempt
-from paypal.standard.models import ST_PP_COMPLETED
-from paypal.standard.ipn.signals import valid_ipn_received, invalid_ipn_received
+from paypal.standard.models import ST_PP_COMPLETED, ST_PP_PENDING
+from paypal.standard.ipn.views import ipn
+
 
 logger = logging.getLogger(__name__)
 
@@ -340,7 +341,6 @@ def bestellen(request):
         # Set the order ID before saving
         order.order_id = uuid.uuid4()
         order.order_date = timezone.now()
-        order.done = True
         order.save()
         
         paypal_dict = {
@@ -378,42 +378,50 @@ def bestellen(request):
 
 @csrf_exempt
 def paypal_ipn(request):
+    logger.info("Starting PayPal IPN processing.")
+    print("PayPal IPN View wurde aufgerufen.")
     if request.method == "POST":
         # PayPal sendet IPN-Daten an diese URL
         try:
-            # `valid_ipn_received` wird ausgelöst, wenn PayPal eine gültige Zahlung bestätigt
-            def handle_valid_ipn(sender, **kwargs):
-                ipn_obj = sender
-                # Bestellung anhand der `invoice` ID (order_id) abrufen
-                try:
-                    order = Order.objects.get(order_id=ipn_obj.invoice)
-                except Order.DoesNotExist:
-                    logger.error(f"Order with ID {ipn_obj.invoice} does not exist.")
-                    return
+            ipn_obj = request.POST
+            
+            order_id = ipn_obj.get('invoice')
+            payment_status = ipn_obj.get('payment_status')
+            txn_id = ipn_obj.get('txn_id')
 
-                # Überprüfen, ob die Zahlung erfolgreich war
-                if ipn_obj.payment_status == ST_PP_COMPLETED:
-                    # Zahlung erfolgreich, Bestellung als abgeschlossen markieren
-                    order.paid = True
-                    order.payment_id = ipn_obj.txn_id  # Speichern der Transaktions-ID
-                    order.save()
-                    logger.info(f"Order {order.order_id} was paid successfully.")
+            logger.info(f"Received IPN for order ID: {order_id} with payment status: {payment_status} and transaction ID: {txn_id}")
 
-                else:
-                    # Zahlung fehlgeschlagen oder abgebrochen
-                    logger.warning(f"Payment for order {order.order_id} failed with status {ipn_obj.payment_status}.")
+            try:
+                order = Order.objects.get(order_id=order_id)
+            except Order.DoesNotExist:
+                logger.error(f"Order with ID {order_id} not found.")
+                return HttpResponse("Order not found", status=404)
 
-            # Signale verbinden
-            valid_ipn_received.connect(handle_valid_ipn)
-            invalid_ipn_received.connect(lambda sender, **kwargs: logger.error("Invalid IPN received."))
+            # Überprüfen, ob die Zahlung erfolgreich war
+            if payment_status == ST_PP_COMPLETED:
+                # Zahlung erfolgreich, Bestellung als abgeschlossen und bezahlt markieren
+                order.done = True
+                order.paid = True
+                order.payment_status = 'Payed'
+                order.status = 'Payed'
+                order.payment_id = ipn_obj.txn_id  # Speichern der Transaktions-ID
+                order.save()
+                
+                logger.info(f"Order {order.order_id} status updated to paid and done.")
+            elif payment_status == ST_PP_PENDING:
+                order.payment_status = 'Pending'
+                order.save()
+                logging.info(f"Order {order_id} marked as pending.")
+            else:
+                # Zahlung fehlgeschlagen oder abgebrochen
+                logging.warning(f"Order {order_id} received unknown payment status: {payment_status}")
 
-            return HttpResponse(status=200)  # PayPal muss 200 OK erhalten, um die IPN als erfolgreich zu betrachten
-
+        except Order.DoesNotExist:
+            logging.error(f"Order with ID {order_id} not found.")
         except Exception as e:
-            logger.error(f"Error processing PayPal IPN: {e}")
-            return HttpResponse(status=500)
+            logging.error(f"Error processing IPN: {e}")
 
-    return HttpResponse(status=405)
+    return HttpResponse("IPN processed")
 
 
 def payment_success(request):

@@ -64,7 +64,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
         }
-        document.cookie = 'cart=' + JSON.stringify(cart) + ";path=/; SameSite=None; Secure";
+        if (location.protocol === 'https:') {
+            document.cookie = 'cart=' + JSON.stringify(cart) + ";path=/; SameSite=None; Secure";
+        } else {
+            document.cookie = 'cart=' + JSON.stringify(cart) + ";path=/; SameSite=None";
+        }
         console.log('Aktualisierter Warenkorb:', cart);
         location.reload();
     }

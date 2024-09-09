@@ -78,6 +78,7 @@ class Order(models.Model):
     STATUS_CHOICES = [
         ('----', '----'),
         ('Pending', 'Pending'),
+        ('Payed', 'Payed'),
         ('Dispatched', 'dispatched'),
         ('Delivered', 'delivered'),
         ('complained', 'complained'),
@@ -98,6 +99,9 @@ class Order(models.Model):
     shipping_date = models.DateTimeField(null=True, blank=True)
     shipping_provider = models.CharField(max_length=100, blank=True, null=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
+    payed = models.BooleanField(default=False)
+    payment_status = models.CharField(max_length=50, blank=True, null=True)
+
 
     def __str__(self):
         return str(self.id) if self.id is not None else ''
