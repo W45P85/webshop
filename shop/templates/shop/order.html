@@ -10,9 +10,9 @@
                     <div class="d-flex justify-content-between">
                         <h3 class="fw-bold">Bestellübersicht</h3>
                         {% if order.status == 'Pending' and not order.deleted and not complaint.complaint_id %}
-                            <a href="{% url 'delete_order' order_id=order.order_id %}" class="btn btn-danger">Bestellung löschen</i></i></a>
+                            <a href="{% url 'delete_order' order_id=order.order_id %}" class="btn btn-danger">löschen</i></i></a>
                         {% elif order.status != 'Cancelled' %}
-                            <a href="{% url 'complaint_form' order_id=order.order_id %}" class="btn btn-danger">Lieferung Reklamieren</a>
+                            <a href="{% url 'complaint_form' order_id=order.order_id %}" class="btn btn-danger">Reklamieren</a>
                         {% endif %}
 
 
@@ -52,30 +52,52 @@
             <div class="col-12">
                 <div class="shadow p-3">
                     <h4 class="fw-bold mb-3">Bestellpositionen</h4>
-                    <table class="table table-striped table-hover">
-                        <thead>
-                          <tr>
-                            <th scope="col">Position</th>
-                            <th scope="col">Bild</th>
-                            <th scope="col">Artikel</th>
-                            <th scope="col">Menge</th>
-                            <th scope="col">Preis</th>
-                            <th scope="col">Summe</th>
-                          </tr>
-                        </thead>
-                        <tbody class="table-group-divider">
-                          {% for article in articles %}
-                          <tr>
-                            <th scope="row">{{ forloop.counter }}</th>
-                            <td><img src="{{ article.article.img.url }}" width="50" height="50" alt="{{ article.article.name }}"></td>
-                            <td>{{ article.article.name }}</td>
-                            <td>{{ article.quantity }}</td>
-                            <td>{{ article.article.price|floatformat:2 }} €</td>
-                            <td>{{ article.get_total|floatformat:2 }} €</td>
-                          </tr>
-                          {% endfor %}
-                        </tbody>
-                      </table>
+
+                    <!-- Table for larger screens -->
+                    <div class="table-responsive d-none d-sm-block">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th scope="col">Position</th>
+                                    <th scope="col">Bild</th>
+                                    <th scope="col">Artikel</th>
+                                    <th scope="col">Menge</th>
+                                    <th scope="col">Preis</th>
+                                    <th scope="col">Summe</th>
+                                </tr>
+                            </thead>
+                            <tbody class="table-group-divider">
+                                {% for article in articles %}
+                                <tr>
+                                    <th scope="row">{{ forloop.counter }}</th>
+                                    <td><img src="{{ article.article.img.url }}" width="50" height="50" alt="{{ article.article.name }}"></td>
+                                    <td>{{ article.article.name }}</td>
+                                    <td>{{ article.quantity }}</td>
+                                    <td>{{ article.article.price|floatformat:2 }} €</td>
+                                    <td>{{ article.get_total|floatformat:2 }} €</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Cards for smaller screens -->
+                    <div class="d-block d-sm-none">
+                        {% for article in articles %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">{{ article.article.name }}</h5>
+                                <div class="d-flex align-items-center">
+                                    <img src="{{ article.article.img.url }}" alt="{{ article.article.name }}" class="img-fluid me-3" style="max-width: 50px; max-height: 50px;">
+                                    <p class="mb-0"><strong>Position:</strong> {{ forloop.counter }}</p>
+                                </div>
+                                <p class="card-text mt-2"><strong>Menge:</strong> {{ article.quantity }}</p>
+                                <p class="card-text"><strong>Preis:</strong> {{ article.article.price|floatformat:2 }} €</p>
+                                <p class="card-text"><strong>Summe:</strong> {{ article.get_total|floatformat:2 }} €</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
                 </div>
             </div>
         </div>
