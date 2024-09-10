@@ -33,8 +33,6 @@ from django.template.loader import render_to_string, get_template
 from .dhl_utils import send_package_with_dhl
 from django.views.decorators.csrf import csrf_exempt
 from paypal.standard.models import ST_PP_COMPLETED, ST_PP_PENDING
-from paypal.standard.ipn.views import ipn
-from paypal.standard.ipn.signals import valid_ipn_received
 
 
 logger = logging.getLogger(__name__)
@@ -388,7 +386,9 @@ def paypal_ipn(request):
             
             order_id = ipn_obj.get('invoice')
             payment_status = ipn_obj.get('payment_status')
+            print(payment_status)
             txn_id = ipn_obj.get('txn_id')
+            print(txn_id)
 
             logger.info(f"Received IPN for order ID: {order_id} with payment status: {payment_status} and transaction ID: {txn_id}")
 
@@ -432,11 +432,32 @@ def payment_success(request):
     except Order.DoesNotExist:
         return render(request, 'paypal/payment_error.html', {"message": "Order not found."})
 
+    # Markiere die Bestellung als abgeschlossen und bezahlte Bestellung
+    order.done = True
+    order.paid = True
+    order.payment_status = 'Payed'
+    order.status = 'Payed'
+    order.payment_id = request.GET.get('payment_id')  # Speichern der Transaktions-ID, falls verfügbar
+    order.save()
+
     return render(request, 'paypal/payment_success.html', {"order": order})
 
 
 def payment_cancelled(request):
-    return render(request, 'paypal/payment_cancelled.html', {"message": "Payment was cancelled."})
+    order_id = request.GET.get('order_id')
+    try:
+        order = Order.objects.get(order_id=order_id)
+    except Order.DoesNotExist:
+        return render(request, 'paypal/payment_error.html', {"message": "Order not found."})
+
+    # Markiere die Bestellung als abgeschlossen und setze den Bezahlstatus auf False
+    order.done = True
+    order.paid = False
+    order.payment_status = 'Cancelled'
+    order.status = 'Cancelled'
+    order.save()
+
+    return render(request, 'paypal/payment_cancelled.html', {"order": order})
 
 
 @login_required(login_url='login')
