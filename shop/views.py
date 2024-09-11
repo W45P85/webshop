@@ -275,13 +275,12 @@ def check_and_fix_customers():
     customers = Customer.objects.all()
     for customer in customers:
         if customer.user is None:
-            # Hier könntest du Code einfügen, um das Problem zu beheben
+            # Code einfügen, um das Problem zu beheben
             # Zum Beispiel: Einen neuen Benutzer erstellen und mit dem Kunden verknüpfen
             # user = User.objects.create(username='neuer_benutzername', email='...')
             # customer.user = user
             # customer.save()
             print(f"Customer {customer.id} hat keine zugeordnete User-Instanz.")
-
 
 
 def bestellen(request):
@@ -389,17 +388,14 @@ def bestellen(request):
 @csrf_exempt
 def paypal_ipn(request):
     logger.info("Starting PayPal IPN processing.")
-    print("PayPal IPN View wurde aufgerufen.")
     if request.method == "POST":
         # PayPal sendet IPN-Daten an diese URL
         try:
             ipn_obj = request.POST
-            
+
             order_id = ipn_obj.get('invoice')
             payment_status = ipn_obj.get('payment_status')
-            print(payment_status)
             txn_id = ipn_obj.get('txn_id')
-            print(txn_id)
 
             logger.info(f"Received IPN for order ID: {order_id} with payment status: {payment_status} and transaction ID: {txn_id}")
 
@@ -447,7 +443,6 @@ def payment_success(request):
     order.done = True
     order.paid = True
     order.payment_status = 'Payed'
-    order.status = 'Payed'
     order.payment_id = request.GET.get('payment_id')  # Speichern der Transaktions-ID, falls verfügbar
     order.save()
 
@@ -827,7 +822,13 @@ def privacy(request):
 @user_passes_test(is_admin_or_seller)
 def pending_orders(request):
     # Abfragen für verschiedene Bestellstatus
-    pending_orders = Order.objects.filter(status='Pending', address__isnull=False).order_by('-order_date')
+    pending_orders = Order.objects.filter(status='Pending', address__isnull=False).exclude(payment_status='Payed').order_by('-order_date')
+    pending_and_payed_orders = Order.objects.filter(
+        payment_status='Payed',
+        address__isnull=False
+    ).exclude(
+        status__in=['Dispatched', 'Delivered', 'complained', 'Completed', 'Cancelled']
+    ).order_by('-order_date')    
     dispatched_orders = Order.objects.filter(status='Dispatched').order_by('-order_date')
     delivered_orders = Order.objects.filter(status='Delivered').order_by('-order_date')
     complained_orders = Complaint.objects.select_related('order__customer').filter(order__status='Complained').order_by('-created_at')
@@ -883,6 +884,7 @@ def pending_orders(request):
 
     ctx = {
         'pending_orders': pending_orders,
+        'pending_and_payed_orders': pending_and_payed_orders,
         'dispatched_orders': dispatched_orders,
         'delivered_orders': delivered_orders,
         'complained_orders': complained_orders,

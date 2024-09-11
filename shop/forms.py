@@ -268,7 +268,6 @@ class ComplaintForm(forms.ModelForm):
         return image
 
 
-
 class ShippingForm(forms.Form):
     recipient_name = forms.CharField(label="Empfängername", max_length=100)
     street_address = forms.CharField(label="Straße und Hausnummer", max_length=200)

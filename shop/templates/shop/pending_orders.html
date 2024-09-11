@@ -19,6 +19,58 @@
             </div>
         </div>
 
+        <!-- Tabelle für offene und bezahlte Bestellungen -->
+        <div class="col-12 mb-4">
+            <div class="shadow p-3">
+                <h2 class="fw-bold">Offene und bezahlte Bestellungen - Status: Pending und Payed</h2>
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th scope="col">Bestellnummer</th>
+                                <th scope="col">Kunden Email</th>
+                                <th scope="col">Bestelldatum</th>
+                                <th scope="col">Adresse</th>
+                                <th scope="col">Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in pending_and_payed_orders %}
+                            <tr>
+                                <td><a href="{% url 'order' id=order.order_id %}">{{ order.order_id }}</a></td>
+                                <td>{{ order.customer.user.email }}</td>
+                                <td>{{ order.order_date }}</td>
+                                <td>
+                                    {% with address=order.address_set.first %}
+                                        {% if address %}
+                                            {{ address.address }}<br>{{ address.zipcode }}<br>{{ address.city }}<br>{{ address.country }}
+                                        {% else %}
+                                            No Address
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'generate_invoice' order_id=order.order_id %}" class="btn btn-primary">Rechnung generieren</a><br>
+                                    <a href="{% url 'generate_delivery_note' order_id=order.order_id %}" class="btn btn-primary mt-2">Lieferschein generieren</a><br>
+                                    <a href="{% url 'update_shipping_status' order_id=order.order_id %}" class="btn btn-primary mt-2">Versenden</a>
+                                    <br>
+                                    <br>
+                                    <form method="post" action="{% url 'pending_orders' %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="order_id" value="{{ order.order_id }}">
+                                        {{ form.tracking_number.label_tag }}
+                                        {{ form.tracking_number }}
+                                        <button type="submit" class="btn btn-primary">Eintragen</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Tabelle für offene Bestellungen -->
         <div class="col-12 mb-4">
             <div class="shadow p-3">
@@ -50,18 +102,7 @@
                                     {% endwith %}
                                 </td>
                                 <td>
-                                    <a href="{% url 'generate_invoice' order_id=order.order_id %}" class="btn btn-primary">Rechnung generieren</a><br>
-                                    <a href="{% url 'generate_delivery_note' order_id=order.order_id %}" class="btn btn-primary mt-2">Lieferschein generieren</a><br>
-                                    <a href="{% url 'update_shipping_status' order_id=order.order_id %}" class="btn btn-primary mt-2">Versenden</a>
-                                    <br>
-                                    <br>
-                                    <form method="post" action="{% url 'pending_orders' %}" class="d-inline">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="order_id" value="{{ order.order_id }}">
-                                        {{ form.tracking_number.label_tag }}
-                                        {{ form.tracking_number }}
-                                        <button type="submit" class="btn btn-primary">Eintragen</button>
-                                    </form>
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#order{{ order.order_id }}">Erinnerung senden</button>
                                 </td>
                             </tr>
                             {% endfor %}
