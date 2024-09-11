@@ -50,7 +50,7 @@ class OrderAdmin(admin.ModelAdmin):
     search_fields = ('order_id', 'customer__user__email')
     fieldsets = (
         (None, {
-            'fields': ('order_id', 'get_cart_total', 'customer', 'order_date', 'done', 'status', 'tracking_number', 'shipping_provider')
+            'fields': ('order_id', 'get_cart_total', 'customer', 'order_date', 'done', 'status', 'payment_status', 'tracking_number', 'shipping_provider')
         }),
     )
     readonly_fields = ('order_id', 'get_cart_total', 'customer', 'order_date')
