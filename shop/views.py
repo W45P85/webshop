@@ -283,8 +283,15 @@ def check_and_fix_customers():
             print(f"Customer {customer.id} hat keine zugeordnete User-Instanz.")
 
 
+
 def bestellen(request):
     try:
+        logging.info("Starting bestellen view")
+        
+        # Default URLs (Umgebungsvariablen können später genutzt werden, nachdem 'order' definiert ist)
+        notify_url = os.environ.get('PAYPAL_NOTIFY_URL')
+        cancel_return_url = os.environ.get('PAYPAL_CANCEL_RETURN_URL')
+        
         data = json.loads(request.body)
         logging.info(f"Received data: {data}")
 
@@ -341,17 +348,22 @@ def bestellen(request):
         order.order_id = uuid.uuid4()
         order.order_date = timezone.now()
         order.save()
+
+        # Jetzt kann auf order.order_id zugegriffen werden
+        return_url = f"{os.environ.get('PAYPAL_RETURN_URL')}?order_id={order.order_id}"
+
+        logging.info(f"Notify URL: {notify_url}")
+        logging.info(f"Return URL: {return_url}")
+        logging.info(f"Cancel Return URL: {cancel_return_url}")
         
         paypal_dict = {
             "business": os.environ.get('PAYPAL_BUSINESS'),
             "amount": format(order.get_cart_total(), '.2f'),
             "invoice": order.order_id,
             "currency_code": os.environ.get('PAYPAL_CURRENCY'),
-            "notify_url": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_NOTIFY_URL'))),
-            "return": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_RETURN_URL'))),
-            "cancel_return": request.build_absolute_uri(reverse(os.environ.get('PAYPAL_CANCEL_RETURN_URL'))),
-            "return": request.build_absolute_uri(reverse('payment_success')) + f"?order_id={order.order_id}",
-            "cancel_return": request.build_absolute_uri(reverse('payment_cancelled')),
+            "notify_url": notify_url,
+            "return": return_url,
+            "cancel_return": cancel_return_url,
         }
 
         paypal_form = PayPalPaymentsForm(initial=paypal_dict)
@@ -366,13 +378,12 @@ def bestellen(request):
         response.delete_cookie('cart')
 
         return response
-
-    except ValueError as e:
-        logging.error(f"ValueError: {e}")
-        return HttpResponseBadRequest("Invalid input data")
+    
     except Exception as e:
-        logging.error(f"Unexpected error: {e}")
-        return HttpResponseServerError("An unexpected error occurred")
+        logging.error(f"Error in bestellen view: {str(e)}")
+        return HttpResponseServerError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.")
+
+
 
 
 @csrf_exempt
@@ -469,6 +480,11 @@ def order(request, id):
         messages.error(request, "Bestellung nicht gefunden.")
         return redirect('shop')
 
+    # Sicherstellen, dass order und customer existieren, bevor fortgefahren wird
+    if not order:
+        messages.error(request, "Bestellung nicht gefunden.")
+        return redirect('shop')
+
     if request.user.is_superuser or is_admin_or_seller(request.user):
         articles = order.orderdarticle_set.all()
         ctx = {'articles': articles, 'order': order, 'complaint': complaint}
@@ -478,6 +494,7 @@ def order(request, id):
         ctx = {'articles': articles, 'order': order, 'complaint': complaint}
         return render(request, 'shop/order.html', ctx)
     else:
+        # Kunden-Validierung
         if not order.customer:
             messages.error(request, "Bestellung hat keinen zugeordneten Kunden.")
         elif not hasattr(order.customer, 'user'):
@@ -486,6 +503,7 @@ def order(request, id):
             messages.error(request, "Sie sind nicht berechtigt, diese Bestellung anzusehen.")
         
         return redirect('shop')
+
 
 
 def error404(request, exception):
