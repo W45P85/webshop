@@ -32,15 +32,10 @@ def visitorCookieHandler(request):
                 'get_total': cart_total
             }
             articles.append(article_info)
-            print(f"Added article {article.name} to cart.")  # Debugging-Ausgabe
 
         except ObjectDoesNotExist:
             # Handle case where article with this ID does not exist
-            print(f"Article with id {article_id} does not exist.")  # Debugging-Ausgabe
             pass
-
-    print(f"Final articles: {articles}")  # Debugging-Ausgabe
-    print(f"Final order: {order}")  # Debugging-Ausgabe
 
     return {'articles': articles, 'order': order}
 

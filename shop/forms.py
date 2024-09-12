@@ -315,3 +315,36 @@ class ShippingForm(forms.Form):
                 field.widget.attrs['class'] = 'form-control'
             elif isinstance(field.widget, (forms.DateInput, forms.TimeInput)):
                 field.widget.attrs['class'] = 'form-control'
+
+
+class MessageForm(forms.ModelForm):
+    recipient = forms.ModelChoiceField(queryset=User.objects.all(), required=True, empty_label="Empfänger auswählen")
+    subject = forms.CharField(label="Betreff")
+    body = forms.CharField(label="Text", widget=forms.Textarea(attrs={'rows': 3}))
+    
+    class Meta:
+        model = Message
+        fields = ['recipient', 'subject', 'body']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field_name, field in self.fields.items():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'form-check-input'
+            elif isinstance(field.widget, (forms.TextInput, forms.NumberInput, forms.Select, forms.Textarea)):
+                field.widget.attrs['class'] = 'form-control'
+            elif isinstance(field.widget, (forms.DateInput, forms.TimeInput)):
+                field.widget.attrs['class'] = 'form-control'
+
+
+class MessageReplyForm(forms.ModelForm):
+    body = forms.CharField(label="Text", widget=forms.Textarea(attrs={'rows': 3}))
+
+    class Meta:
+        model = Message
+        fields = ['body']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['body'].widget.attrs.update({'class': 'form-control'})
+

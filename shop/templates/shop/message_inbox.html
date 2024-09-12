@@ -1,0 +1,60 @@
+{% extends "shop/index.html" %}
+
+{% block title %}Inbox{% endblock %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h2 class="mb-4">Inbox</h2>
+    
+    <!-- Empfangene Nachrichten -->
+    <h4>Empfangene Nachrichten</h4>
+    <div class="user-messages">
+      {% if user_messages %}
+        <div class="list-group">
+          {% for message in user_messages %}
+            <!-- Nachrichtenlink mit Styles für ungelesene Nachrichten -->
+            {% if message.recipient == request.user %}
+              <a href="{% url 'message_detail' message.id %}" 
+                 class="list-group-item list-group-item-action {% if message.read_at is None %}fw-bold bg-light{% else %}bg-white{% endif %}">
+                <div class="d-flex w-100 justify-content-between">
+                  <h5 class="mb-1 fw-bold">{{ message.subject }}</h5>
+                  <small>{{ message.sent_at }}</small>
+                </div>
+                <p class="mb-1">{{ message.body|slice:":100" }}{% if message.body|length > 100 %}...{% endif %}</p>
+              </a>
+              <a href="{% url 'chat_history' message.sender.id %}">
+                Chat mit {{ message.sender.username }}
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted">Keine empfangenen Nachrichten vorhanden.</p>
+      {% endif %}
+    </div>
+    
+    <!-- Gesendete Nachrichten -->
+    <h4 class="mt-5 mb-3">Gesendete Nachrichten</h4>
+    <div class="user-messages">
+      {% if user_messages %}
+        <div class="list-group">
+          {% for message in user_messages %}
+            {% if message.sender == request.user %}
+              <a href="{% url 'message_detail' message.id %}" class="list-group-item list-group-item-action">
+                <div class="d-flex w-100 justify-content-between">
+                  <h5 class="mb-1 fw-bold">{{ message.subject }}</h5>
+                  <small class="text-muted">{{ message.sent_at|date:"d M Y H:i" }}</small>
+                </div>
+                <p class="mb-1">{{ message.body|slice:":100" }}{% if message.body|length > 100 %}...{% endif %}</p>
+                <small class="text-muted">An: {{ message.recipient }}</small>
+              </a>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-muted">Keine gesendeten Nachrichten vorhanden.</p>
+      {% endif %}
+    </div>
+
+  </div>
+{% endblock %}

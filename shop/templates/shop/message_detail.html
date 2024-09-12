@@ -1,0 +1,16 @@
+{% extends "shop/index.html" %}
+
+{% block content %}
+  <h2><strong>{{ message.subject }}</strong></h2>
+  <p><strong>Von:</strong> {{ message.sender.username }}</p>
+  <p><strong>An:</strong> {{ message.recipient.username }}</p>
+  <p><strong>Wann:</strong> {{ message.sent_at }}</p>
+  <p><strong>Wann gelesen:</strong> {{ message.read_at }}</p>
+  <hr>
+  <p><strong>Nachricht:</strong></p>
+  <p>{{ message.body }}</p>
+  {% if message.sender == request.user or message.recipient == request.user %}
+    <a class="btn btn-danger mt-4" href="{% url 'delete_message' message.id %}" onclick="return confirm('Sind Sie sicher, dass Sie diese Nachricht löschen möchten?');">Löschen</a>
+    <a class="btn btn-primary mt-4" href="{% url 'reply_message' message.id %}">Antworten</a>
+  {% endif %}
+{% endblock %}
