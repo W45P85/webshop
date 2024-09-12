@@ -38,6 +38,17 @@ logger = logging.getLogger(__name__)
 def is_admin_or_seller(user):
     return user.groups.filter(name='Admins').exists() or user.groups.filter(name='Sellers').exists()
 
+def about(request):
+    return render(request, 'shop/basic/about.html')
+def products(request):
+    return render(request, 'shop/basic/products.html')
+def awards(request):
+    return render(request, 'shop/basic/awards.html')
+def help(request):
+    return render(request, 'shop/basic/help.html')
+def contact(request):
+    return render(request, 'shop/basic/contact.html')
+
 
 def shop(request):
     # Holen aller Kategorien

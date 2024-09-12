@@ -1,0 +1,71 @@
+{% extends "shop/index.html" %}
+{% load static %}
+{% block title %}Über uns{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <div class="header-image" style="background-image: url('{% static 'img/header.jpg' %}'); height: 500px; background-size: cover; background-position: center;">
+        <div class="overlay d-flex align-items-center justify-content-center" style="background-color: rgba(0, 0, 0, 0.5); height: 100%;">
+            <h1 class="text-white display-4"><strong>Nordlicht Design und Coding</strong></h1>
+        </div>
+    </div>
+</div>
+<!-- Über uns Bereich -->
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8">
+            <h2>Über uns</h2>
+            <p class="lead">
+                Willkommen bei <strong>Nordlicht Design und Coding</strong>! Wir sind eine Webagentur aus dem schönen Glückstadt, 
+                wo die Elbe unser ständiger Begleiter ist und frische Brisen die besten Ideen mit sich bringen. 
+                Bei uns dreht sich alles um Django und maßgeschneiderte Lösungen für unsere Kunden.
+            </p>
+        </div>
+        <div class="col-md-4">
+            <img src="{% static 'img/office.jpg' %}" class="card-img-top" alt="Nordlicht Büro">
+        </div>
+    </div>
+</div>
+
+<!-- Glückstadt Bereich -->
+<div class="container mt-5 lead">
+    <h2>Unsere Stadt</h2>
+    <p>
+        Glückstadt – ein Ort, der seinem Namen gerecht wird. Hier, an der Nordseeküste, wo der Matjes traditionell 
+        auf den Tellern landet, finden wir unsere kreative Energie. Ob bei einem Spaziergang an der Elbe oder 
+        bei einem frischen Kaffee am Hafen – die Inspiration lauert hier an jeder Ecke.
+    </p>
+</div>
+
+<!-- Mina Bereich -->
+<div class="container mt-5 lead">
+    <div class="row">
+        <div class="col-md-4">
+            <img src="{% static 'img/hund.jpeg' %}" class="card-img-top" alt="Foto von Mina">
+        </div>
+        <div class="col-md-8">
+            <h2>Unser Team</h2>
+            <p>
+                Neben uns Menschen gibt es da noch unsere inoffizielle Chefin: <strong>Mina</strong>, der Bobtail. 
+                Sie sorgt nicht nur für gute Stimmung, sondern erinnert uns auch an die wichtigen Dinge im Leben: 
+                Bewegung, frische Luft und Snacks! Ihre Präsenz im Büro ist von unschätzbarem Wert – sie macht 
+                Pausen effizienter und Spaziergänge inspirierender.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Warum wir Bereich -->
+<div class="container mt-5 mb-5 lead">
+    <h2>Warum Nordlicht Design und Coding?</h2>
+    <p>
+        Bei uns bekommst du mehr als nur Standardlösungen. Wir bieten maßgeschneiderte Webanwendungen, die genau 
+        auf deine Bedürfnisse zugeschnitten sind. Egal ob E-Commerce, Webapplikationen oder spezielle Features – 
+        mit Django setzen wir deine Anforderungen passgenau um. Wir sind klein, flexibel und absolut kundenorientiert.
+    </p>
+    <p>
+        Also, lass uns doch mal ins Gespräch kommen! Vielleicht bei einem virtuellen Kaffee – während Mina 
+        draußen für Ordnung sorgt.
+    </p>
+</div>
+{% endblock %}

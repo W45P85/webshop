@@ -1,0 +1,69 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block title %}Unsere Auszeichnungen{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Unsere Auszeichnungen</h1>
+    <p class="lead">
+        Bei Nordlicht Design & Coding sind wir stolz auf unsere Erfolge und Auszeichnungen. Auch wenn unsere Preise 
+        nicht immer auf der vordersten Bühne der neuesten Trends stehen, sind wir begeistert von jedem 
+        Anerkennungsschreiben und jeder Trophäe. Wir haben hart daran gearbeitet, außergewöhnliche Weblösungen 
+        zu schaffen – und das blieb nicht unbemerkt!
+    </p>
+
+    <div class="row">
+        <!-- Beispielauszeichnung 1 -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <img src="{% static 'img/award1.jpg' %}" class="card-img-top" alt="Innovativstes Webdesign 2022">
+                <div class="card-body">
+                    <h5 class="card-title">Innovativstes Webdesign 2022</h5>
+                    <p class="card-text">
+                        Unser Team wurde für das innovativste Webdesign ausgezeichnet, bei dem wir es geschafft haben, 
+                        traditionelles Design auf ein neues Level zu heben – und das mit einem Augenzwinkern! Die 
+                        Fachjury war begeistert von unserer einzigartigen Mischung aus Kreativität und Retro-Chic.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Beispielauszeichnung 2 -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <img src="{% static 'img/award2.jpg' %}" class="card-img-top" alt="Bestes Benutzererlebnis 2021">
+                <div class="card-body">
+                    <h5 class="card-title">Bestes Benutzererlebnis 2021</h5>
+                    <p class="card-text">
+                        Unsere Agentur wurde für das beste Benutzererlebnis ausgezeichnet. Wir haben es geschafft, eine 
+                        Website zu kreieren, die nicht nur optisch beeindruckt, sondern auch benutzerfreundlich ist – 
+                        selbst unsere größten Kritiker waren beeindruckt und haben unser Design gefeiert.
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Beispielauszeichnung 3 -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <img src="{% static 'img/award3.jpg' %}" class="card-img-top" alt="Kreativste Nutzung von Technologien 2020">
+                <div class="card-body">
+                    <h5 class="card-title">Kreativste Nutzung von Technologien 2020</h5>
+                    <p class="card-text">
+                        Diese Auszeichnung haben wir für unsere kreative Nutzung modernster Technologien erhalten. 
+                        Wir haben bewiesen, dass man auch mit etwas älteren Tools Großartiges erreichen kann. 
+                        Unsere innovativen Ansätze haben uns diese verdiente Anerkennung eingebracht.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-5 lead">
+        <p>Wir sind stolz auf all die Auszeichnungen, die wir erhalten haben, und freuen uns, dass unser Engagement für 
+        außergewöhnliches Webdesign und kreative Lösungen gewürdigt wird. Jeder Preis ist ein Zeugnis für unser 
+        kreatives Team und unsere Leidenschaft für die digitale Welt!</p>
+    </div>
+</div>
+{% endblock %}

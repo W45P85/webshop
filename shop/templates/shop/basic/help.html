@@ -1,0 +1,106 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block title %}Hilfe{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Hilfe & Support</h1>
+    <p class="lead">
+        Willkommen auf der Hilfe-Seite von Nordlicht Design & Coding! Hier finden Sie Antworten auf häufige Fragen 
+        und nützliche Informationen, die Ihnen weiterhelfen. Sollte Ihre Frage hier nicht beantwortet werden, 
+        zögern Sie nicht, uns direkt zu kontaktieren.
+    </p>
+
+    <div class="row">
+        <div class="col-md-12">
+            <h2 class="mt-4">Häufig gestellte Fragen (FAQ)</h2>
+            <div id="accordion">
+                <!-- FAQ 1 -->
+                <div class="card">
+                    <div class="card-header" id="headingOne">
+                        <h5 class="mb-0">
+                            <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                Wie kann ich eine Bestellung aufgeben?
+                            </button>
+                        </h5>
+                    </div>
+
+                    <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+                        <div class="card-body">
+                            Um eine Bestellung aufzugeben, wählen Sie einfach die gewünschten Artikel aus unserem Shop aus 
+                            und legen Sie sie in den Warenkorb. Gehen Sie anschließend zur Kasse, um Ihre Bestellung abzuschließen.
+                            Sie können die Bestellung mit verschiedenen Zahlungsmethoden bezahlen.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- FAQ 2 -->
+                <div class="card">
+                    <div class="card-header" id="headingTwo">
+                        <h5 class="mb-0">
+                            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                Wie kann ich meine Bestellung stornieren?
+                            </button>
+                        </h5>
+                    </div>
+                    <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordion">
+                        <div class="card-body">
+                            Wenn Sie Ihre Bestellung stornieren möchten, kontaktieren Sie bitte unseren Kundenservice so schnell 
+                            wie möglich. Wenn die Bestellung bereits versandt wurde, müssen Sie die Ware gemäß unserem 
+                            Rückgabeverfahren zurücksenden.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- FAQ 3 -->
+                <div class="card">
+                    <div class="card-header" id="headingThree">
+                        <h5 class="mb-0">
+                            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                Wie finde ich meine Bestellhistorie?
+                            </button>
+                        </h5>
+                    </div>
+                    <div id="collapseThree" class="collapse" aria-labelledby="headingThree" data-parent="#accordion">
+                        <div class="card-body">
+                            Um Ihre Bestellhistorie einzusehen, melden Sie sich bitte in Ihrem Benutzerkonto an und gehen Sie 
+                            zum Bereich „Meine Bestellungen“. Dort finden Sie eine Übersicht über alle Ihre bisherigen Bestellungen.
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- FAQ 4 -->
+                <div class="card">
+                    <div class="card-header" id="headingFour">
+                        <h5 class="mb-0">
+                            <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                Welche Zahlungsmethoden akzeptieren Sie?
+                            </button>
+                        </h5>
+                    </div>
+                    <div id="collapseFour" class="collapse" aria-labelledby="headingFour" data-parent="#accordion">
+                        <div class="card-body">
+                            Wir akzeptieren verschiedene Zahlungsmethoden, darunter Kreditkarten, PayPal und Banküberweisungen. 
+                            Weitere Informationen finden Sie auf unserer Seite „Zahlungsarten“.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-md-12">
+            <h2>Kontaktieren Sie uns</h2>
+            <p>Wenn Sie weitere Fragen haben oder Unterstützung benötigen, zögern Sie bitte nicht, uns zu kontaktieren. 
+            Unser Support-Team steht Ihnen gerne zur Verfügung!</p>
+            <ul>
+                <li><strong>Telefon:</strong> +49 123 456 789</li>
+                <li><strong>E-Mail:</strong> support@nordlichtdesigncoding.de</li>
+                <li><strong>Adresse:</strong> Musterstraße 1, 25348 Glückstadt, Deutschland</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

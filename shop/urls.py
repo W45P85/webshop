@@ -7,6 +7,13 @@ from django.conf.urls.static import static
 urlpatterns = [
     path("", views.shop, name="shop"),
     
+    # Footer
+    path('about/', views.about, name='about'),
+    path('products/', views.products, name='products'),
+    path('awards/', views.awards, name='awards'),
+    path('help/', views.help, name='help'),
+    path('contact/', views.contact, name='contact'),
+    
     # Shop
     path("warenkorb/", views.warenkorb, name="warenkorb"),
     path("kasse/", views.kasse, name="kasse"),
