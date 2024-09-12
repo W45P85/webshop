@@ -102,7 +102,39 @@
                                     {% endwith %}
                                 </td>
                                 <td>
-                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#order{{ order.order_id }}">Erinnerung senden</button>
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#order{{ order.order_id }}">
+                                        Erinnerung senden
+                                    </button>
+                                    <!-- Modal zur Bestätigung des Nachrichtenversands -->
+                                    <div class="modal fade" id="order{{ order.order_id }}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                        <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                            <h5 class="modal-title" id="exampleModalLabel">Zahlungserinnerung senden</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                            Möchten Sie eine Zahlungserinnerung für die Bestellung {{ order.order_id }} an {{ order.customer.username }} senden?
+                                            </div>
+                                            <div class="modal-footer">
+                                            <!-- Link zur Ansicht 'send_message', wobei der Empfänger und Betreff automatisch gefüllt werden -->
+                                            <form method="post" action="{% url 'send_message' %}">
+                                                {% csrf_token %}
+                                                <input type="hidden" name="recipient" value="{{ order.customer.id }}">
+                                                <input type="hidden" name="subject" value="Zahlungserinnerung für Bestellung {{ order.order_id }}">
+                                                <p class="text-muted mb-4">Nachrichtentext mit Erinnerungsnachricht:</p>
+                                                <textarea name="body">
+                                                    Hallo {{ order.customer.user }},&#13;&#10;bitte begleiche die Zahlung für die Bestellung {{ order.order_id }} zum nächstmöglichen Zeitpunkt.&#13;&#10;Viele Grüße,
+                                                    {{ user.username }}
+                                                </textarea>
+
+                                                <button type="submit" class="btn btn-primary">Ja, Erinnerung senden</button>
+                                            </form>
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                                            </div>
+                                        </div>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                             {% endfor %}

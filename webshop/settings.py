@@ -97,6 +97,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "shop.context_processors.cart_count",
                 "shop.context_processors.customer_profile",
+                "shop.context_processors.unread_messages_count",
             ],
         },
     },

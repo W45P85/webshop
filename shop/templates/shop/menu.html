@@ -37,6 +37,14 @@
                 <a class="nav-link link-light p-2" href="{% url 'search' %}" title="Suche">
                     <i class="fas fa-search fa-2x"></i>
                 </a>
+
+                <!-- Messaging Icon -->
+                <a class="nav-link link-light p-2" href="{% url 'message_inbox' %}" title="Nachrichten">
+                    <i class="fa-solid fa-envelope fa-2x"></i>
+                    {% if unread_messages_count > 0 %}
+                        <span class="badge rounded-pill bg-danger position-absolute top-28 start-90 translate-middle badge-count">{{ unread_messages_count }}</span>
+                    {% endif %}
+                </a>
                 
                 {% load custom_tags %}
                 <!-- User Profile or Login -->
@@ -49,6 +57,7 @@
                             {% if request.user.is_superuser or request.user|is_group_member:"Sellers" %}
                                 <li><a class="dropdown-item" href="{% url 'seller_dashboard' %}">Verkäufer Dashboard</a></li>
                                 <li><a class="dropdown-item" href="{% url 'customer_dashboard' %}">Kunden Dashboard</a></li>
+                                <li><a class="dropdown-item" href="{% url 'send_message' %}">Nachricht senden</a></li>
                             {% else %}
                                 <li><a class="dropdown-item" href="{% url 'customer_dashboard' %}">Kunden Dashboard</a></li>
                             {% endif %}

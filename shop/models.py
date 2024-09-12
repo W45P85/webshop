@@ -4,6 +4,7 @@ from django.forms import ValidationError
 from django.utils import timezone
 from decimal import Decimal
 from PIL import Image
+from django.conf import settings
 
 def validate_image(image):
     max_size_mb = 5  # Maximale Größe in MB
@@ -279,3 +280,27 @@ class DeliveryNote(models.Model):
         last_number = last_note.id if last_note else 0
         next_number = last_number + 1
         return f'L-{next_number}'
+
+
+class Message(models.Model):
+    '''
+    sender: Der Benutzer, der die Nachricht sendet.
+    recipient: Der Benutzer, der die Nachricht empfängt.
+    subject: Der Betreff der Nachricht.
+    body: Der Inhalt der Nachricht.
+    sent_at: Der Zeitpunkt, zu dem die Nachricht gesendet wurde.
+    read_at: Der Zeitpunkt, zu dem die Nachricht gelesen wurde (optional).
+    '''
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
+    subject = models.CharField(max_length=255)
+    body = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"From {self.sender.username} to {self.recipient.username} - {self.subject}"
+
+    def mark_as_read(self):
+        self.read_at = timezone.now()
+        self.save()

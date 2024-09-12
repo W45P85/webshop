@@ -54,6 +54,14 @@ urlpatterns = [
     path('order/delete/<uuid:order_id>/', views.delete_order, name='delete_order'),
     path('update_shipping/<uuid:order_id>/', views.update_shipping_status, name='update_shipping_status'),
 
+    # Messages
+    path('send/', views.send_message, name='send_message'),
+    path('inbox/', views.message_inbox, name='message_inbox'),
+    path('message/<int:message_id>/', views.message_detail, name='message_detail'),
+    path('message/<int:message_id>/reply/', views.reply_message, name='reply_message'),
+    path('message/<int:message_id>/delete/', views.delete_message, name='delete_message'),
+    path('chat/<int:recipient_id>/', views.chat_history, name='chat_history'),
+
     # Admin
     path('admin/', admin.site.urls, name="django-admin"),
     

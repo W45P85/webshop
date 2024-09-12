@@ -3,14 +3,12 @@ import os
 import uuid
 import logging
 import base64
-import re
 from django.conf import settings
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.files.base import ContentFile
 from django.db import IntegrityError
 from django.dispatch import receiver
 from django.shortcuts import render, redirect, get_object_or_404
-from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import PasswordChangeForm
@@ -19,7 +17,7 @@ from django.utils.safestring import mark_safe
 from django.utils import timezone
 from django.db.models import Sum, Count, Q, F, FloatField, ExpressionWrapper
 from datetime import timedelta
-from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm, ComplaintForm, OrderSearchForm, MarkDeliveredForm, ShippingForm
+from . forms import CustomerCreationForm, SearchForm, AddArticleForm, AddCategoryForm, EditArticleForm, ProfileForm, TrackingNumberForm, ComplaintForm, OrderSearchForm, MarkDeliveredForm, ShippingForm, MessageForm, MessageReplyForm
 from . models import *
 from . viewtools import visitorCookieHandler, visitorOrder
 from django.http import HttpResponseNotFound, JsonResponse, HttpResponse, HttpResponseBadRequest, HttpResponseServerError
@@ -1393,3 +1391,121 @@ def update_shipping_status(request, order_id):
         form = ShippingForm(initial=initial_data)
 
     return render(request, 'shop/update_shipping_status.html', {'form': form, 'order': order})
+
+
+@login_required
+@user_passes_test(is_admin_or_seller)
+def send_message(request):
+    if request.method == 'POST':
+        # Empfänger, Betreff und Nachrichtentext aus den POST-Daten abrufen
+        recipient_id = request.POST.get('recipient')
+        subject = request.POST.get('subject')
+        body = request.POST.get('body')
+
+        # Den Empfänger basierend auf der Empfänger-ID abrufen
+        recipient = get_object_or_404(User, id=recipient_id)
+        
+        # Nachricht erstellen und speichern
+        message = Message.objects.create(
+            sender=request.user,
+            recipient=recipient,
+            subject=subject,
+            body=body
+        )
+        message.save()
+
+        # Umleitung zur Inbox nach dem Versenden
+        return redirect('message_inbox')
+    
+    else:
+        form = MessageForm()
+
+    return render(request, 'shop/send_message.html', {'form': form})
+
+
+@login_required
+def message_inbox(request):
+    # Nachrichten, bei denen der Benutzer entweder der Absender oder der Empfänger ist
+    user_messages = Message.objects.filter(
+        models.Q(sender=request.user) | models.Q(recipient=request.user)
+    ).order_by('-sent_at')
+    
+    return render(request, 'shop/message_inbox.html', {'user_messages': user_messages})
+
+
+@login_required
+def message_detail(request, message_id):
+    message = get_object_or_404(Message, id=message_id)
+    
+    if message.recipient == request.user or message.sender == request.user:
+        if message.recipient == request.user and message.read_at is None:
+            message.mark_as_read()
+        return render(request, 'shop/message_detail.html', {'message': message})
+    else:
+        return redirect('message_inbox')
+
+@login_required
+def reply_message(request, message_id):
+    original_message = get_object_or_404(Message, id=message_id)
+    
+    if request.method == 'POST':
+        form = MessageReplyForm(request.POST)
+        if form.is_valid():
+            reply = form.save(commit=False)
+            reply.sender = request.user
+            reply.recipient = original_message.sender
+            reply.subject = f"Re: {original_message.subject}"
+            reply.save()
+            return redirect('message_inbox')
+    else:
+        form = MessageReplyForm()
+    
+    return render(request, 'shop/reply_message.html', {'form': form, 'original_message': original_message})
+
+
+@login_required
+def delete_message(request, message_id):
+    message = get_object_or_404(Message, id=message_id)
+    
+    # Sicherstellen, dass der Benutzer der Absender oder Empfänger der Nachricht ist
+    if message.sender == request.user or message.recipient == request.user:
+        message.delete()
+    
+    return redirect('message_inbox')
+
+
+@login_required
+def chat_history(request, recipient_id):
+    # Den Empfänger und alle Nachrichten zwischen Sender und Empfänger finden
+    recipient = get_object_or_404(User, id=recipient_id)
+    
+    # Filterung der Nachrichten, die zwischen dem aktuellen Benutzer und dem Empfänger gesendet wurden
+    chat_messages = Message.objects.filter(
+        (models.Q(sender=request.user) & models.Q(recipient=recipient)) |
+        (models.Q(sender=recipient) & models.Q(recipient=request.user))
+    ).order_by('sent_at')  # Sortieren nach Sendedatum aufsteigend
+    
+    # Markiere alle ungelesenen Nachrichten als gelesen
+    unread_messages = chat_messages.filter(recipient=request.user, read_at__isnull=True)
+    unread_messages.update(read_at=timezone.now())
+    
+    if request.method == 'POST':
+        form = MessageReplyForm(request.POST)
+        if form.is_valid():
+            reply = form.save(commit=False)
+            reply.sender = request.user
+            reply.recipient = recipient
+            reply.subject = f"Re: {chat_messages.last().subject}"  # Antwort auf die letzte Nachricht
+            reply.save()
+            return redirect('chat_history', recipient_id=recipient.id)
+    else:
+        form = MessageReplyForm()
+    
+    # Übergabe der `chat_messages` an das Template und nicht `messages`
+    return render(request, 'shop/chat_history.html', {
+        'chat_messages': chat_messages, 
+        'form': form, 
+        'recipient': recipient
+    })
+
+
