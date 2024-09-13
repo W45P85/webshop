@@ -75,6 +75,15 @@ class Article(models.Model):
         return self.name
 
 
+class ShippingMethod(models.Model):
+    name = models.CharField(max_length=100)
+    cost = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.cost} €"
+
+
 class Order(models.Model):
     STATUS_CHOICES = [
         ('----', '----'),
@@ -99,6 +108,8 @@ class Order(models.Model):
     shipment_status = models.CharField(max_length=50, blank=True, null=True)
     shipping_date = models.DateTimeField(null=True, blank=True)
     shipping_provider = models.CharField(max_length=100, blank=True, null=True)
+    shipping_method = models.ForeignKey(ShippingMethod, on_delete=models.SET_NULL, null=True, blank=True)
+    shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     delivery_date = models.DateTimeField(null=True, blank=True)
     payed = models.BooleanField(default=False)
     payment_status = models.CharField(max_length=50, blank=True, null=True)

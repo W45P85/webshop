@@ -48,6 +48,10 @@ def help(request):
     return render(request, 'shop/basic/help.html')
 def contact(request):
     return render(request, 'shop/basic/contact.html')
+def imprint(request):
+    return render(request, 'shop/legal/imprint.html')
+def privacy(request):
+    return render(request, 'shop/legal/privacy.html')
 
 
 def shop(request):
@@ -112,11 +116,17 @@ def warenkorb(request):
 
 
 def kasse(request):
+    # Standard-Variablen für die View
+    articles = []
+    order = None
+    address = None
+
+    # Wenn der Benutzer angemeldet ist
     if request.user.is_authenticated:
         customer = request.user.customer
         order, created = Order.objects.get_or_create(customer=customer, done=False)
         articles = order.orderdarticle_set.all()
-        
+
         # Versuche, die Standardadresse des Kunden zu finden
         address = customer.addresses.filter(is_default=True).first()
         
@@ -129,20 +139,35 @@ def kasse(request):
         else:
             logging.debug("Keine Adresse gefunden")
     else:
+        # Für anonyme Benutzer: Prüfe, ob essenzielle Cookies akzeptiert wurden
         if is_cookie_accepted(request, 'essential'):
             cookiedata = visitorCookieHandler(request)
-            articles = cookiedata['articles']
-            order = cookiedata['order']
+            articles = cookiedata.get('articles', [])
+            order = cookiedata.get('order', None)
         else:
-            articles = []
-            order = None
-        address = None
+            logging.debug("Essenzielle Cookies wurden nicht akzeptiert, keine Artikeldaten verfügbar.")
 
+    # Berechne den Artikel-Gesamtpreis
+    cart_total = order.get_cart_total() if order else 0
+
+    # Füge die Versandkosten hinzu
+    shipping_cost = Decimal('6.50')
+    total_price = cart_total + shipping_cost
+
+    # Speichere die Versandkosten, falls eine Bestellung vorhanden ist
+    if order:
+        order.shipping_cost = shipping_cost
+        order.save()
+
+    # Kontext für das Template
     ctx = {
         'articles': articles,
         'order': order,
         'address': address,
+        'shipping_cost': shipping_cost,
+        'total_price': total_price,
     }
+
     return render(request, 'shop/kasse.html', ctx)
 
 
@@ -296,17 +321,14 @@ def bestellen(request):
     try:
         logging.info("Starting bestellen view")
         
-        # Default URLs (Umgebungsvariablen können später genutzt werden, nachdem 'order' definiert ist)
+        # Default URLs (Umgebungsvariablen können später genutzt werden)
         notify_url = os.environ.get('PAYPAL_NOTIFY_URL')
         cancel_return_url = os.environ.get('PAYPAL_CANCEL_RETURN_URL')
         
         data = json.loads(request.body)
         logging.info(f"Received data: {data}")
 
-        # Default cart_total value
-        cart_total = 0.00
-
-        # Validation of required fields in customerData and deliveryAddress
+        # Validate required fields
         required_customer_fields = ['name', 'email']
         required_address_fields = ['address', 'zip', 'city', 'country']
         
@@ -323,7 +345,7 @@ def bestellen(request):
         if request.user.is_authenticated:
             customer = request.user.customer
             order = Order.objects.filter(customer=customer, done=False).first()
-            if order is None:
+            if not order:
                 order = Order.objects.create(customer=customer, done=False)
 
             address_data = {
@@ -339,34 +361,29 @@ def bestellen(request):
 
         else:
             customer, order = visitorOrder(request, data)
-            if customer is None or order is None:
+            if not customer or not order:
                 return HttpResponse('Fehler bei der Bestellung für anonymen Benutzer.')
 
-        cart_total_data = data['customerData'].get('cart_total', '0.00')
-        
-        if isinstance(cart_total_data, str):
-            cart_total_data = cart_total_data.replace(',', '.')
-            cart_total = float(cart_total_data)
-        elif isinstance(cart_total_data, (int, float)):
-            cart_total = float(cart_total_data)
-        else:
-            return HttpResponseBadRequest("Invalid cart total format")
+        # Calculate total cart value from order model
+        cart_total = order.get_cart_total()
 
         # Set the order ID before saving
         order.order_id = uuid.uuid4()
         order.order_date = timezone.now()
+
+        # Add shipping cost
+        shipping_cost = Decimal('6.50')  # Example shipping cost, could be dynamic
+        order.shipping_cost = shipping_cost
+        total_price = cart_total + shipping_cost
+
         order.save()
 
-        # Jetzt kann auf order.order_id zugegriffen werden
+        # PayPal form setup
         return_url = f"{os.environ.get('PAYPAL_RETURN_URL')}?order_id={order.order_id}"
-
-        logging.info(f"Notify URL: {notify_url}")
-        logging.info(f"Return URL: {return_url}")
-        logging.info(f"Cancel Return URL: {cancel_return_url}")
         
         paypal_dict = {
             "business": os.environ.get('PAYPAL_BUSINESS'),
-            "amount": format(order.get_cart_total(), '.2f'),
+            "amount": format(total_price, '.2f'),  # Gesamtpreis inkl. Versandkosten
             "invoice": order.order_id,
             "currency_code": os.environ.get('PAYPAL_CURRENCY'),
             "notify_url": notify_url,
@@ -452,6 +469,7 @@ def payment_success(request):
     order.done = True
     order.paid = True
     order.payment_status = 'Payed'
+    order.status = 'Payed'
     order.payment_id = request.GET.get('payment_id')  # Speichern der Transaktions-ID, falls verfügbar
     order.save()
 
@@ -818,13 +836,6 @@ def article_detail(request, id):
     }
     return render(request, 'shop/article_detail.html', ctx)
 
-
-def imprint(request):
-    return render(request, 'shop/legal/imprint.html')
-
-
-def privacy(request):
-    return render(request, 'shop/legal/privacy.html')
 
 
 @login_required
