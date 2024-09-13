@@ -44,6 +44,7 @@
                     <span class="text-primary">Bestellübersicht</span>
                     <span class="badge bg-primary rounded-pill">{{ order.get_cart_items }}</span>
                 </h4>
+                <!-- kasse.html -->
                 <ul class="list-group mb-3">
                     {% for article in articles %}
                     <li class="list-group-item d-flex justify-content-between lh-sm">
@@ -55,10 +56,22 @@
                     </li>
                     {% endfor %}
                     <li class="list-group-item d-flex justify-content-between bg-body-tertiary">
-                        <div class="text-success">
+                        <div class="text-body">
                             <h6 class="my-0">Gesamtpreis</h6>
                         </div>
-                        <span class="text-success">{{ order.get_cart_total|floatformat:2 }} €</span>
+                        <span class="text-body">{{ order.get_cart_total|floatformat:2 }} €</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between bg-body-tertiary">
+                        <div class="text-body">
+                            <h6 class="my-0">Versandkosten</h6>
+                        </div>
+                        <span class="text-body">{{ shipping_cost|floatformat:2 }} €</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between bg-body-tertiary">
+                        <div class="text-success">
+                            <h6 class="my-0 fw-bold text-decoration-underline">Gesamtkosten</h6>
+                        </div>
+                        <span class="text-success fw-bold text-decoration-underline">{{ total_price|floatformat:2 }} €</span>
                     </li>
                 </ul>
             </div>
@@ -68,7 +81,7 @@
                     {% csrf_token %}
                     <div class="row g-3">
                         <div class="col-md-6">
-                            <label for="inputName" class="form-label">Name</label>
+                            <label for="inputName" class="form-label">Vor- und Nachname</label>
                             {% if request.user.is_authenticated %}
                             <input type="text" class="form-control" id="inputName" value="{{ request.user.get_full_name }}" required>
                             {% else %}
@@ -76,7 +89,7 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label for="inputEmail" class="form-label">Email</label>
+                            <label for="inputEmail" class="form-label">E-Mail</label>
                             {% if request.user.is_authenticated %}
                             <input type="email" class="form-control" id="inputEmail" value="{{ request.user.email }}" required>
                             {% else %}
@@ -84,7 +97,7 @@
                             {% endif %}
                         </div>
                         <div class="col-md-6">
-                            <label for="inputAddress" class="form-label">Adresse</label>
+                            <label for="inputAddress" class="form-label">Straße und Hausnummer</label>
                             {% if request.user.is_authenticated and address %}
                             <input type="text" class="form-control" id="inputAddress" name="address" value="{{ address.address }}" required>
                             {% else %}

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponseRedirect
-from .models import Customer, Article, Order, OrderdArticle, Address, Category, Complaint, Invoice
+from .models import Customer, Article, Order, OrderdArticle, Address, Category, Complaint, Invoice, Message
 from .forms import TrackingNumberForm
 
 
@@ -233,3 +233,8 @@ class InvoiceAdmin(admin.ModelAdmin):
     customer_email.short_description = 'Kunden E-Mail'
     order_id.short_description = 'Order ID'
     order_date.short_description = 'Bestelldatum'
+
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('sender', 'recipient', 'subject', 'sent_at', 'read_at')

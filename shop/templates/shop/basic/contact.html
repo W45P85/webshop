@@ -1,0 +1,52 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block title %}Kontakt{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Kontaktieren Sie uns</h1>
+    <p class="lead">
+        Wir freuen uns, von Ihnen zu hören! Wenn Sie Fragen haben oder Unterstützung benötigen, zögern Sie bitte nicht, uns zu kontaktieren. 
+        Füllen Sie einfach das Kontaktformular aus oder nutzen Sie die angegebenen Kontaktdaten.
+    </p>
+
+    <div class="row">
+        <!-- Kontaktformular -->
+        <div class="col-md-6 mb-4">
+            <h2>Kontaktformular</h2>
+            <form>
+                <div class="form-group">
+                    <label for="name">Name</label>
+                    <input type="text" class="form-control" id="name" placeholder="Ihr Name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">E-Mail-Adresse</label>
+                    <input type="email" class="form-control" id="email" placeholder="Ihre E-Mail-Adresse" required>
+                </div>
+                <div class="form-group">
+                    <label for="message">Nachricht</label>
+                    <textarea class="form-control" id="message" rows="4" placeholder="Ihre Nachricht" required></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Absenden</button>
+            </form>
+        </div>
+
+        <!-- Kontaktdaten -->
+        <div class="col-md-6 mb-4">
+            <h2>Unsere Kontaktdaten</h2>
+            <ul class="list-unstyled">
+                <li><strong>Telefon:</strong> +49 123 456 789</li>
+                <li><strong>E-Mail:</strong> contact@nordlichtdesigncoding.de</li>
+                <li><strong>Adresse:</strong> Musterstraße 1, 25348 Glückstadt, Deutschland</li>
+            </ul>
+
+            <!-- Google Maps Integration -->
+            <div class="mt-4">
+                <h2>Unsere Lage</h2>
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2390.344594368614!2d9.511844984219572!3d53.746040879820826!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x47b1c5c20d9f21b7%3A0xf39b09de5b3e6bd9!2sMusterstra%C3%9Fe%201%2C%2025348%20Gl%C3%BCckstadt%2C%20Deutschland!5e0!3m2!1sde!2sus!4v1695967800472!5m2!1sde!2sus" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

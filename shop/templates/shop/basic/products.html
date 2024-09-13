@@ -1,0 +1,70 @@
+{% extends "shop/index.html" %}
+{% load static %}
+
+{% block title %}Produkte{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Unsere Produkte – Ein Blick in die Vergangenheit</h1>
+    <p class="lead">
+        Willkommen in unserem Elektronik-Museum! Hier findest du Produkte, die so retro sind, dass selbst Vintage-Liebhaber 
+        sie nicht mehr kennen. Wenn du auf der Suche nach den neuesten Gadgets bist, dann ist hier genau der 
+        falsche Ort. Aber hey, zumindest kannst du sehen, wie es damals war!
+    </p>
+    
+    <div class="row">
+        <!-- Beispielprodukt 1 -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <img src="{% static 'img/retro-tv.jpg' %}" class="card-img-top" alt="Retro Fernseher">
+                <div class="card-body">
+                    <h5 class="card-title">Retro Fernseher 2000</h5>
+                    <p class="card-text">
+                        Erinnerst du dich noch an die guten alten Zeiten, als Fernseher noch eine eigene Ecke im Wohnzimmer hatten? 
+                        Der Retro Fernseher 2000 bringt dieses nostalgische Gefühl zurück! Mit 14 Zoll Bildschirmdiagonale, 
+                        Schwarz-Weiß-Display und dem ständigen Rauschen, das dich an deine Kindheit erinnert. Ein echter Klassiker!
+                    </p>
+                    <a href="#" class="btn btn-primary mt-2">Mehr erfahren</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Beispielprodukt 2 -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <img src="{% static 'img/floppy-disk.jpg' %}" class="card-img-top" alt="Diskette">
+                <div class="card-body">
+                    <h5 class="card-title">Diskette 1.44 MB</h5>
+                    <p class="card-text">
+                        Die Diskette – das Überbleibsel aus einer Ära, in der 1.44 MB noch als viel Speicher galten. Ideal für all 
+                        deine nostalgischen Speicherbedürfnisse oder als Papieruntersetzer. Wir garantieren dir, dass sie 
+                        immer noch genauso wenig Platz braucht, wie damals!
+                    </p>
+                    <a href="#" class="btn btn-primary mt-2">Mehr erfahren</a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Beispielprodukt 3 -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <img src="{% static 'img/pager.jpg' %}" class="card-img-top" alt="Pager">
+                <div class="card-body">
+                    <h5 class="card-title">Pager – Das Original</h5>
+                    <p class="card-text">
+                        Vergiss Smartphones und ständige Erreichbarkeit – der Pager ist zurück! Mit einer Reichweite von 
+                        wenigen Metern und dem unverwechselbaren Piepton bei jedem eingehenden Pager-Ruf. Perfekt für 
+                        den nostalgischen Notruf, wenn du jemandem sagen möchtest, dass du zu spät kommst.
+                    </p>
+                    <a href="#" class="btn btn-primary mt-2">Mehr erfahren</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-5 lead">
+        <p>Wir hoffen, du hast genauso viel Spaß beim Stöbern wie wir beim Zusammenstellen dieser Sammlung. 
+        Vielleicht findest du ja das perfekte Stück für dein nächstes Retro-Projekt!</p>
+    </div>
+</div>
+{% endblock %}
