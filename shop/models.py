@@ -22,7 +22,7 @@ def validate_image(image):
 
 
 class Customer(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='customer')
     profile_picture = models.ImageField(upload_to='profile_pics/', default='profile_pics/none.png')
     is_seller = models.BooleanField(default=False)
 
@@ -51,7 +51,7 @@ class Customer(models.Model):
 class Article(models.Model):
     name = models.CharField(max_length=200, null=True)
     description = models.TextField(null=True, blank=True)
-    price = models.DecimalField(max_digits=6, decimal_places=2, default=0.00)
+    price = models.DecimalField(max_digits=6, decimal_places=2, default=0.00) # Nettopreis
     img = models.ImageField(null=True, blank=True, upload_to='product_images/', default='article_pics/none.jpeg')
     category = models.ForeignKey('Category', on_delete=models.CASCADE, null=True, blank=True)
     article_number = models.CharField(max_length=50, unique=True, null=True, blank=True)
@@ -84,14 +84,31 @@ class ShippingMethod(models.Model):
         return f"{self.name} - {self.cost} €"
 
 
+class TaxRate(models.Model):
+    country = models.CharField(max_length=100)
+    tax_rate = models.DecimalField(max_digits=5, decimal_places=2)  # z.B. 19.00 für 19%
+
+    def __str__(self):
+        return f"{self.country}: {self.tax_rate}%"
+
+    @staticmethod
+    def get_tax_rate_for_country(country_code):
+        try:
+            tax_rate = TaxRate.objects.get(country=country_code)
+            return tax_rate.tax_rate
+        except TaxRate.DoesNotExist:
+            return Decimal('0.00')  # Rückgabewert für Länder ohne spezifischen Steuersatz
+
+
+
 class Order(models.Model):
     STATUS_CHOICES = [
         ('----', '----'),
         ('Pending', 'Pending'),
         ('Payed', 'Payed'),
-        ('Dispatched', 'dispatched'),
-        ('Delivered', 'delivered'),
-        ('complained', 'complained'),
+        ('Dispatched', 'Dispatched'),
+        ('Delivered', 'Delivered'),
+        ('Complained', 'Complained'),
         ('Completed', 'Completed'),
         ('Cancelled', 'Cancelled'),
     ]
@@ -110,10 +127,13 @@ class Order(models.Model):
     shipping_provider = models.CharField(max_length=100, blank=True, null=True)
     shipping_method = models.ForeignKey(ShippingMethod, on_delete=models.SET_NULL, null=True, blank=True)
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    tax_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     delivery_date = models.DateTimeField(null=True, blank=True)
     payed = models.BooleanField(default=False)
     payment_status = models.CharField(max_length=50, blank=True, null=True)
-
+    country = models.CharField(max_length=100, null=True, blank=True)
+    subtotal = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    total = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     def __str__(self):
         return str(self.id) if self.id is not None else ''
@@ -140,10 +160,47 @@ class Order(models.Model):
     def address_set(self):
         return self.address_set.all()
     
+    def get_tax_rate(self):
+        try:
+            tax_rate = TaxRate.objects.get(country=self.country)
+            return tax_rate.tax_rate
+        except TaxRate.DoesNotExist:
+            return 0.00  # Fallback if no tax rate is found
+
+    def calculate_total(self):
+        # Berechnung der Zwischensumme (Artikelkosten)
+        subtotal = Decimal(self.get_cart_total())
+        
+        # Berechnung der Steuer
+        tax_rate = Decimal(self.get_tax_rate()) / Decimal('100.00')
+        tax_amount = subtotal * tax_rate
+
+        # Berechnung der Versandkosten
+        shipping_cost = Decimal(self.shipping_method.cost) if self.shipping_method else Decimal('0.00')
+
+        # Gesamtkosten berechnen: Zwischensumme + Steuern + Versandkosten
+        total = subtotal + tax_amount + shipping_cost
+        
+        # Felder aktualisieren
+        self.subtotal = subtotal
+        self.tax_amount = tax_amount
+        self.total = total
+    
+        # Rückgabe der Gesamtkosten
+        return total
+    
     def save(self, *args, **kwargs):
-        if self.status == 'Pending' and not self.created_at:
-            self.created_at = timezone.now()
-        super().save(*args, **kwargs)
+        if self.pk is None:
+            # Speichern der Instanz, um einen Primärschlüssel zu erhalten
+            super().save(*args, **kwargs)
+        # Berechnung der Gesamtsumme
+        self.calculate_total()
+        # Die Instanz mit den aktualisierten Feldern speichern
+        super().save(update_fields=['subtotal', 'tax_amount', 'total'])
+
+
+
+
 
 
 class OrderdArticle(models.Model):
@@ -160,8 +217,35 @@ class OrderdArticle(models.Model):
 
     @property
     def get_total(self):
-        total = self.article.price * self.quantity
+        # Konvertiere den Artikelpreis zu Decimal für die Berechnung
+        total = Decimal(self.article.price) * Decimal(self.quantity)
         return total
+
+    def get_tax_rate(self):
+        # Verwende den Steuersatz aus der Bestellung als Decimal
+        return Decimal(self.order.get_tax_rate())
+
+    @property
+    def get_tax_amount(self):
+        tax_rate = self.get_tax_rate()
+        total_price = self.get_total
+        # Berechne die Steuer mit Decimal-Werten
+        tax_amount = (total_price * tax_rate) / Decimal('100.00')
+        return tax_amount
+
+    @property
+    def get_total_incl_tax(self):
+        # Berechne den Gesamtpreis inkl. Steuer
+        return self.get_total + self.get_tax_amount
+
+    @property
+    def get_unit_tax_amount(self):
+        # Berechne die Steuer pro Einheit
+        tax_rate = self.get_tax_rate()
+        unit_price = Decimal(self.article.price)
+        unit_tax_amount = (unit_price * tax_rate) / Decimal('100.00')
+        return unit_tax_amount
+
 
 
 class Address(models.Model):

@@ -68,6 +68,12 @@
                         <span class="text-body">{{ shipping_cost|floatformat:2 }} €</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between bg-body-tertiary">
+                        <div class="text-body">
+                            <h6 class="my-0">MwSt. ({{ tax_rate }}%)</h6>
+                        </div>
+                        <span class="text-body">{{ tax_amount|floatformat:2 }} €</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between bg-body-tertiary">
                         <div class="text-success">
                             <h6 class="my-0 fw-bold text-decoration-underline">Gesamtkosten</h6>
                         </div>
@@ -122,12 +128,13 @@
                         </div>
                         <div class="col-md-6">
                             <label for="inputCountry" class="form-label">Land</label>
-                            <select class="form-select" id="inputCountry" name="country" required>
+                            <select class="form-select" id="inputCountry" name="country" disabled>
                                 <option value="">Land wählen...</option>
                                 <option value="DE" {% if address and address.country == "DE" %}selected{% endif %}>Deutschland</option>
                                 <option value="AT" {% if address and address.country == "AT" %}selected{% endif %}>Österreich</option>
                                 <option value="CH" {% if address and address.country == "NL" %}selected{% endif %}>Niederlande</option>
                             </select>
+                            <p class="text-body-secondary"><i>Das Land kann in Ihrem Profil geändert werden.</i></p>
                         </div>
                     </div>
                     <!-- Payment section in the form -->
