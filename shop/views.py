@@ -226,8 +226,8 @@ def loginSeite(request):
             # Sicherstellen, dass ein Customer und eine Dummy-Bestellung existieren
             customer, created = Customer.objects.get_or_create(user=user)
             order, order_created = Order.objects.get_or_create(customer=customer, done=False)
-            if order_created:
-                messages.info(request, 'Eine neue Dummy-Bestellung wurde für den Benutzer erstellt.')
+            #if order_created:
+                #messages.info(request, 'Eine neue Dummy-Bestellung wurde für den Benutzer erstellt.')
             
             if 'Admins' in user_groups or 'Sellers' in user_groups:
                 return redirect('seller_dashboard')
