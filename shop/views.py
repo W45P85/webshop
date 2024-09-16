@@ -120,6 +120,7 @@ def kasse(request):
     articles = []
     order = None
     address = None
+    tax_rate = Decimal('0.00')  # Standard-Mehrwertsteuersatz
 
     # Wenn der Benutzer angemeldet ist
     if request.user.is_authenticated:
@@ -136,6 +137,8 @@ def kasse(request):
 
         if address:
             logging.debug(f"Adresse gefunden: {address.address}, {address.city}, {address.zipcode}, {address.country}")
+            # Hole den passenden Mehrwertsteuersatz für das Land
+            tax_rate = TaxRate.get_tax_rate_for_country(address.country)
         else:
             logging.debug("Keine Adresse gefunden")
     else:
@@ -148,15 +151,22 @@ def kasse(request):
             logging.debug("Essenzielle Cookies wurden nicht akzeptiert, keine Artikeldaten verfügbar.")
 
     # Berechne den Artikel-Gesamtpreis
-    cart_total = order.get_cart_total() if order else 0
+    cart_total = Decimal(order.get_cart_total()) if order else Decimal('0.00')
+    
+    # Berechne den Steuerbetrag basierend auf dem Warenwert und dem Steuersatz
+    tax_amount = (cart_total * tax_rate) / Decimal('100.00')
 
     # Füge die Versandkosten hinzu
     shipping_cost = Decimal('6.50')
-    total_price = cart_total + shipping_cost
 
-    # Speichere die Versandkosten, falls eine Bestellung vorhanden ist
+    # Berechne den Gesamtpreis (Artikel + Versand + Steuern)
+    total_price = cart_total + shipping_cost + tax_amount
+
+    # Speichere die Versandkosten und die Steuer, falls eine Bestellung vorhanden ist
     if order:
         order.shipping_cost = shipping_cost
+        order.tax_amount = tax_amount
+        order.calculate_total()
         order.save()
 
     # Kontext für das Template
@@ -165,10 +175,15 @@ def kasse(request):
         'order': order,
         'address': address,
         'shipping_cost': shipping_cost,
+        'cart_total': cart_total,
+        'tax_rate': tax_rate,
+        'tax_amount': tax_amount,
         'total_price': total_price,
     }
 
     return render(request, 'shop/kasse.html', ctx)
+
+
 
 
 def artikelBackend(request):
@@ -207,6 +222,13 @@ def loginSeite(request):
             
             # Benutzerrollen prüfen
             user_groups = user.groups.values_list('name', flat=True)
+            
+            # Sicherstellen, dass ein Customer und eine Dummy-Bestellung existieren
+            customer, created = Customer.objects.get_or_create(user=user)
+            order, order_created = Order.objects.get_or_create(customer=customer, done=False)
+            if order_created:
+                messages.info(request, 'Eine neue Dummy-Bestellung wurde für den Benutzer erstellt.')
+            
             if 'Admins' in user_groups or 'Sellers' in user_groups:
                 return redirect('seller_dashboard')
             else:
@@ -215,6 +237,7 @@ def loginSeite(request):
             messages.error(request, 'Benutzername oder Passwort ungültig.')
 
     return render(request, 'shop/login.html', {'page': page})
+
 
 
 def logoutUser(request):
@@ -229,23 +252,37 @@ def regUser(request):
     if request.method == 'POST':
         user_form = CustomerCreationForm(request.POST)
         profile_form = ProfileForm(request.POST, request.FILES)
-        
+
         if user_form.is_valid() and profile_form.is_valid():
             user = user_form.save()
             profile_form.save(user=user)
 
+            # Erstelle oder hole den Customer für den neuen User
+            customer, created = Customer.objects.get_or_create(user=user)
+
+            # Prüfe, ob eine Dummy-Order existiert, falls nicht, erstelle sie
+            order, order_created = Order.objects.get_or_create(customer=customer, done=False)
+
+            # Setze eine order_id, wenn diese nicht vorhanden ist
+            if order.order_id is None:
+                order.order_id = uuid.uuid4()
+
+            # Speichere die Order nur, wenn sie erstellt wurde oder sich geändert hat
+            if order_created or not order.order_id:
+                order.save()
+
+            # if order_created:
+            #     messages.success(request, 'Eine neue Dummy-Bestellung wurde erstellt.')
+
             login(request, user)
             messages.success(request, f'Benutzer {user.username} wurde erfolgreich erstellt.')
             return redirect('shop')
+
         else:
             # Log errors for debugging
             user_form_errors = user_form.errors.as_data()
             profile_form_errors = profile_form.errors.as_data()
-            
-            # Print errors to console
-            print('User Form Errors:', user_form_errors)
-            print('Profile Form Errors:', profile_form_errors)
-            
+
             # Add errors to messages
             for field, errors in user_form_errors.items():
                 for error in errors:
@@ -259,6 +296,8 @@ def regUser(request):
 
     ctx = {'user_form': user_form, 'profile_form': profile_form, 'page': page}
     return render(request, 'shop/registration_form.html', ctx)
+
+
 
 
 @login_required
@@ -370,6 +409,10 @@ def bestellen(request):
         # Set the order ID before saving
         order.order_id = uuid.uuid4()
         order.order_date = timezone.now()
+        order.status = 'Pending'
+        
+        # Save the order
+        order.save()
 
         # Add shipping cost
         shipping_cost = Decimal('6.50')  # Example shipping cost, could be dynamic
