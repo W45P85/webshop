@@ -51,6 +51,7 @@ urlpatterns = [
     path("login/", views.loginSeite, name="login"),
     path("logout/", views.logoutUser, name="logout"),
     path("register/", views.regUser, name="register"),
+    path("register_complete/", views.complete_registration, name='complete_registration'),
     path("profile/update/", views.update_profile, name='profile_update'),
     
     # Order

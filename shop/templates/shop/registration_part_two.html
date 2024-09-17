@@ -1,0 +1,107 @@
+{% extends "shop/index.html" %}
+
+{% block title %}
+Registrierung abschließen
+{% endblock %}
+
+{% block content %}
+    <div class="registration-body">
+        <div class="container">
+            <div class="card registration-card">
+                <div class="card-header registration-card-header">
+                    <h2>Registrierung abschließen</h2>
+                </div>
+                <div class="card-body registration-card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ profile_form.non_field_errors }}
+                        <div class="mb-3">
+                            <label for="id_profile_picture" class="form-label">Profilbild</label>
+                            {{ profile_form.profile_picture }}
+                            {% if profile_form.profile_picture.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in profile_form.profile_picture.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_address" class="form-label">Adresse</label>
+                            {{ profile_form.address }}
+                            {% if profile_form.address.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in profile_form.address.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_city" class="form-label">Stadt</label>
+                            {{ profile_form.city }}
+                            {% if profile_form.city.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in profile_form.city.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_state" class="form-label">Bundesland</label>
+                            {{ profile_form.state }}
+                            {% if profile_form.state.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in profile_form.state.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_zipcode" class="form-label">Postleitzahl</label>
+                            {{ profile_form.zipcode }}
+                            {% if profile_form.zipcode.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in profile_form.zipcode.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_country" class="form-label">Land</label>
+                            <div class="form-check">
+                                <input type="radio" id="country_de" name="country" value="DE" {% if profile_form.country.value == "DE" %}checked{% endif %} class="form-check-input">
+                                <label for="country_de" class="form-check-label">Deutschland</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="radio" id="country_nl" name="country" value="NL" {% if profile_form.country.value == "NL" %}checked{% endif %} class="form-check-input">
+                                <label for="country_nl" class="form-check-label">Niederlande</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="radio" id="country_at" name="country" value="AT" {% if profile_form.country.value == "AT" %}checked{% endif %} class="form-check-input">
+                                <label for="country_at" class="form-check-label">Österreich</label>
+                            </div>
+                            {% if profile_form.country.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {% for error in profile_form.country.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="mb-3">
+                            <label for="id_is_default" class="form-check-label">
+                                {{ profile_form.is_default }}
+                                Als Standardadresse setzen
+                            </label>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Registrierung abschließen</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

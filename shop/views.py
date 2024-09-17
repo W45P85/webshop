@@ -53,11 +53,26 @@ def imprint(request):
 def privacy(request):
     return render(request, 'shop/legal/privacy.html')
 
+def validate_customer(request):
+    show_button = False
+
+    if request.user.is_authenticated:
+        try:
+            customer = request.user.customer
+            show_button = not customer.has_addresses()
+        except Customer.DoesNotExist:
+            show_button = True
+
+    return {'show_button': show_button}
+
 
 def shop(request):
     # Holen aller Kategorien
     categories = Category.objects.all().order_by('name')
     articles = Article.objects.all()
+    
+    # Füge den Kontext für die Validierung des Kunden hinzu
+    validate_customer_ctx = validate_customer(request)
 
     category_filter = request.GET.get('category')
     if category_filter:
@@ -71,6 +86,8 @@ def shop(request):
     ctx = {
         'top_level_categories': top_level_categories,
         'articles': articles,
+        'validate_customer': validate_customer,
+        'show_button': validate_customer_ctx['show_button'],
     }
 
     return render(request, 'shop/shop.html', ctx)
@@ -136,11 +153,12 @@ def kasse(request):
             address = customer.addresses.order_by('-date').first()
 
         if address:
-            logging.debug(f"Adresse gefunden: {address.address}, {address.city}, {address.zipcode}, {address.country}")
+            logger.debug(f"Adresse gefunden: {address.address}, {address.city}, {address.zipcode}, {address.country}")
             # Hole den passenden Mehrwertsteuersatz für das Land
             tax_rate = TaxRate.get_tax_rate_for_country(address.country)
+            logger.debug(f"Gefundener Mehrwertsteuersatz: {tax_rate} für Land: {address.country}")
         else:
-            logging.debug("Keine Adresse gefunden")
+            logger.debug("Keine Adresse gefunden")
     else:
         # Für anonyme Benutzer: Prüfe, ob essenzielle Cookies akzeptiert wurden
         if is_cookie_accepted(request, 'essential'):
@@ -148,7 +166,7 @@ def kasse(request):
             articles = cookiedata.get('articles', [])
             order = cookiedata.get('order', None)
         else:
-            logging.debug("Essenzielle Cookies wurden nicht akzeptiert, keine Artikeldaten verfügbar.")
+            logger.debug("Essenzielle Cookies wurden nicht akzeptiert, keine Artikeldaten verfügbar.")
 
     # Berechne den Artikel-Gesamtpreis
     cart_total = Decimal(order.get_cart_total()) if order else Decimal('0.00')
@@ -166,7 +184,7 @@ def kasse(request):
     if order:
         order.shipping_cost = shipping_cost
         order.tax_amount = tax_amount
-        order.calculate_total()
+        order.total = total_price  # Sicherstellen, dass total korrekt berechnet und gespeichert wird
         order.save()
 
     # Kontext für das Template
@@ -299,6 +317,52 @@ def regUser(request):
 
 
 
+@login_required
+def complete_registration(request):
+    # Sicherstellen, dass der Benutzer ein Customer ist
+    customer = Customer.objects.filter(user=request.user).first()
+
+    # Fehlerbehandlung, wenn kein Customer gefunden wird
+    if not customer:
+        messages.error(request, 'Kein Kundenprofil gefunden. Bitte registrieren Sie sich erneut.')
+        return redirect('registration_start')
+
+    if request.method == 'POST':
+        profile_form = ProfileForm(request.POST, request.FILES, instance=customer)
+        if profile_form.is_valid():
+            profile_form.save(user=request.user)
+            messages.success(request, 'Registrierung abgeschlossen! Ihr Profil wurde aktualisiert.')
+            return redirect('shop')
+
+        else:
+            # Fehlerbehandlung
+            profile_form_errors = profile_form.errors.as_data()
+            for field, errors in profile_form_errors.items():
+                for error in errors:
+                    messages.error(request, f'Fehler im Profilformular ({field}): {error}')
+    else:
+        # Initialisiere das Formular mit bestehenden Daten
+        initial_data = {}
+        addresses = Address.objects.filter(customer=customer).order_by('-date')
+        latest_address = addresses.first()
+
+        if latest_address:
+            initial_data = {
+                'address': latest_address.address,
+                'city': latest_address.city,
+                'state': latest_address.state,
+                'zipcode': latest_address.zipcode,
+                'country': latest_address.country,
+                'is_default': latest_address.is_default,
+            }
+        profile_form = ProfileForm(instance=customer, initial=initial_data)
+
+    ctx = {
+        'profile_form': profile_form,
+    }
+    return render(request, 'shop/registration_part_two.html', ctx)
+
+
 
 @login_required
 def update_profile(request):
@@ -397,6 +461,7 @@ def bestellen(request):
             address, created = Address.objects.update_or_create(
                 customer=customer, order=order, defaults=address_data
             )
+            logging.info(f"Address = {address}")
 
         else:
             customer, order = visitorOrder(request, data)
@@ -405,28 +470,42 @@ def bestellen(request):
 
         # Calculate total cart value from order model
         cart_total = order.get_cart_total()
+        logging.info(f"cart_total = {cart_total}")
+
+        # Get the tax rate based on the address
+        address = Address.objects.filter(order=order).first()  # Get the address associated with the order
+        tax_rate = TaxRate.get_tax_rate_for_country(address.country) if address else Decimal('0.00')
+        logging.info(f"tax_rate = {tax_rate}")
+
+        # Calculate the tax amount
+        tax_amount = (cart_total * tax_rate) / Decimal('100.00')
+        logging.info(f"tax_amount = {tax_amount}")
 
         # Set the order ID before saving
         order.order_id = uuid.uuid4()
         order.order_date = timezone.now()
         order.status = 'Pending'
         
-        # Save the order
-        order.save()
-
         # Add shipping cost
         shipping_cost = Decimal('6.50')  # Example shipping cost, could be dynamic
         order.shipping_cost = shipping_cost
-        total_price = cart_total + shipping_cost
+        
+        # Calculate total price including tax and shipping cost
+        total_price = cart_total + shipping_cost + tax_amount
+        logging.info(f"total_price = {total_price}")
 
+        # Save the order
+        order.total = total_price
+        order.tax_amount = tax_amount
         order.save()
+        logging.info(f"order_id = {order.order_id}")
 
         # PayPal form setup
         return_url = f"{os.environ.get('PAYPAL_RETURN_URL')}?order_id={order.order_id}"
         
         paypal_dict = {
             "business": os.environ.get('PAYPAL_BUSINESS'),
-            "amount": format(total_price, '.2f'),  # Gesamtpreis inkl. Versandkosten
+            "amount": format(total_price, '.2f'),  # Gesamtpreis inkl. Versandkosten und Mehrwertsteuer
             "invoice": order.order_id,
             "currency_code": os.environ.get('PAYPAL_CURRENCY'),
             "notify_url": notify_url,
@@ -450,6 +529,8 @@ def bestellen(request):
     except Exception as e:
         logging.error(f"Error in bestellen view: {str(e)}")
         return HttpResponseServerError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.")
+
+
 
 
 

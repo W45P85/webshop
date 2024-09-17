@@ -5,6 +5,10 @@ from django.utils import timezone
 from decimal import Decimal
 from PIL import Image
 from django.conf import settings
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 def validate_image(image):
     max_size_mb = 5  # Maximale Größe in MB
@@ -25,6 +29,7 @@ class Customer(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, related_name='customer')
     profile_picture = models.ImageField(upload_to='profile_pics/', default='profile_pics/none.png')
     is_seller = models.BooleanField(default=False)
+    is_registration_complete = models.BooleanField(default=False)
 
     def __str__(self):
         if self.user:
@@ -34,6 +39,9 @@ class Customer(models.Model):
 
     def get_orders(self):
         return Order.objects.filter(customer=self)
+    
+    def has_addresses(self):
+        return self.addresses.exists()
 
     @property
     def email(self):
@@ -85,7 +93,7 @@ class ShippingMethod(models.Model):
 
 
 class TaxRate(models.Model):
-    country = models.CharField(max_length=100)
+    country = models.CharField(max_length=100)  # ISO 3166-1 Alpha-2 Code
     tax_rate = models.DecimalField(max_digits=5, decimal_places=2)  # z.B. 19.00 für 19%
 
     def __str__(self):
@@ -93,11 +101,14 @@ class TaxRate(models.Model):
 
     @staticmethod
     def get_tax_rate_for_country(country_code):
+        logger.debug(f"Looking up tax rate for country code: {country_code}")
         try:
             tax_rate = TaxRate.objects.get(country=country_code)
+            logger.debug(f"Found tax rate: {tax_rate.tax_rate} for country code: {country_code}")
             return tax_rate.tax_rate
         except TaxRate.DoesNotExist:
-            return Decimal('0.00')  # Rückgabewert für Länder ohne spezifischen Steuersatz
+            logger.debug(f"No tax rate found for country code: {country_code}")
+            return Decimal('0.00')
 
 
 
@@ -190,16 +201,22 @@ class Order(models.Model):
         return total
     
     def save(self, *args, **kwargs):
-        if self.pk is None:
-            # Speichern der Instanz, um einen Primärschlüssel zu erhalten
-            super().save(*args, **kwargs)
-        # Berechnung der Gesamtsumme
-        self.calculate_total()
-        # Die Instanz mit den aktualisierten Feldern speichern
-        super().save(update_fields=['subtotal', 'tax_amount', 'total'])
+        try:
+            if self.pk is None:
+                # Wenn die Instanz neu ist, speichere sie zunächst, um einen Primärschlüssel zu erhalten
+                super().save(*args, **kwargs)
+                logger.info(f"New order created with ID {self.pk}")
+            
+            # Berechnung der Gesamtsumme
+            self.calculate_total()
 
+            # Speichern der Instanz mit den aktualisierten Feldern
+            super().save(update_fields=['subtotal', 'tax_amount', 'total', 'order_id'])
+            logger.info(f"Order {self.pk} updated with subtotal: {self.subtotal}, tax_amount: {self.tax_amount}, total: {self.total}, order_id: {self.order_id}")
 
-
+        except Exception as e:
+            logger.error(f"Failed to save order with ID {self.pk}: {str(e)}")
+            raise
 
 
 
