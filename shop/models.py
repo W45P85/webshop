@@ -6,6 +6,7 @@ from decimal import Decimal
 from PIL import Image
 from django.conf import settings
 import logging
+import uuid
 
 
 logger = logging.getLogger(__name__)
@@ -114,14 +115,14 @@ class TaxRate(models.Model):
 
 class Order(models.Model):
     STATUS_CHOICES = [
-        ('----', '----'),
-        ('Pending', 'Pending'),
-        ('Payed', 'Payed'),
-        ('Dispatched', 'Dispatched'),
-        ('Delivered', 'Delivered'),
-        ('Complained', 'Complained'),
-        ('Completed', 'Completed'),
-        ('Cancelled', 'Cancelled'),
+        ('----', '----'),                         # Initialer Status
+        ('Pending', 'Pending'),                   # Bestellt, noch nicht bezahlt
+        ('Payed', 'Payed'),                       # Bezzahlt
+        ('Dispatched', 'Dispatched'),             # Versendet
+        ('Delivered', 'Delivered'),               # Geliefert
+        ('Complained', 'Complained'),             # Storniert
+        ('Completed', 'Completed'),               # Erledigt
+        ('Cancelled', 'Cancelled'),               # Abgebrochen
     ]
     
     customer = models.ForeignKey(Customer, on_delete=models.CASCADE, blank=True, null=True, db_index=True)
@@ -130,7 +131,7 @@ class Order(models.Model):
     order_id = models.UUIDField(editable=False, unique=True, null=True, blank=True)
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, default='Pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, null=True, default='----')
     deleted = models.BooleanField(default=False)
     tracking_number = models.CharField(max_length=100, blank=True, null=True)
     shipment_status = models.CharField(max_length=50, blank=True, null=True)
@@ -150,17 +151,33 @@ class Order(models.Model):
         return str(self.id) if self.id is not None else ''
     
     def get_cart_total(self):
+        # Sicherstellen, dass die Bestellung bereits gespeichert ist
+        if not self.pk:
+            # Wenn die Bestellung noch nicht gespeichert ist, Dummy-Werte verwenden
+            if self.status == '----':
+                return Decimal('0.00')
+
+            raise ValueError("Order must be saved before accessing its ordered articles.")
+        
         ordered_articles = self.orderdarticle_set.all()
         cart_total = Decimal('0.00')
-        
+
         for ordered_article in ordered_articles:
             total = ordered_article.get_total
             cart_total += total
-            
+
         return cart_total
 
     @property
     def get_cart_items(self):
+        # Sicherstellen, dass die Bestellung bereits gespeichert ist
+        if not self.pk:
+            # Wenn die Bestellung noch nicht gespeichert ist, Dummy-Werte verwenden
+            if self.status == '----':
+                return 0
+
+            raise ValueError("Order must be saved before accessing its ordered articles.")
+        
         ordered_articles = self.orderdarticle_set.all()
         cart_items = sum([ordered_article.quantity for ordered_article in ordered_articles])
         return cart_items
@@ -169,6 +186,9 @@ class Order(models.Model):
         return self.orderdarticle_set.all()
     
     def address_set(self):
+        # Sicherstellen, dass die Bestellung bereits gespeichert ist
+        if not self.pk:
+            raise ValueError("Order must be saved before accessing its addresses.")
         return self.address_set.all()
     
     def get_tax_rate(self):
@@ -196,23 +216,26 @@ class Order(models.Model):
         self.subtotal = subtotal
         self.tax_amount = tax_amount
         self.total = total
-    
+
         # Rückgabe der Gesamtkosten
         return total
-    
+
     def save(self, *args, **kwargs):
         try:
-            if self.pk is None:
-                # Wenn die Instanz neu ist, speichere sie zunächst, um einen Primärschlüssel zu erhalten
-                super().save(*args, **kwargs)
-                logger.info(f"New order created with ID {self.pk}")
-            
+            # Bei neuer Bestellung eine UUID generieren
+            if not self.order_id:
+                self.order_id = uuid.uuid4()
+
             # Berechnung der Gesamtsumme
             self.calculate_total()
 
+            # Nur bei einer neuen Bestellung den Status setzen
+            if self.pk is None:
+                self.status = 'Pending'
+
             # Speichern der Instanz mit den aktualisierten Feldern
-            super().save(update_fields=['subtotal', 'tax_amount', 'total', 'order_id'])
-            logger.info(f"Order {self.pk} updated with subtotal: {self.subtotal}, tax_amount: {self.tax_amount}, total: {self.total}, order_id: {self.order_id}")
+            super().save(*args, **kwargs)
+            logger.info(f"Order {self.pk} saved with subtotal: {self.subtotal}, tax_amount: {self.tax_amount}, total: {self.total}")
 
         except Exception as e:
             logger.error(f"Failed to save order with ID {self.pk}: {str(e)}")

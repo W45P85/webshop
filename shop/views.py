@@ -111,7 +111,16 @@ def warenkorb(request):
 
     if request.user.is_authenticated:
         customer = request.user.customer
-        order, created = Order.objects.get_or_create(customer=customer, done=False)
+        
+        # Suche nach einer Bestellung mit dem Status '----' für den Kunden
+        open_orders = Order.objects.filter(customer=customer, status='----').first()
+        
+        if open_orders.exists():
+            order = open_orders.first()
+        else:
+            # Wenn keine Bestellung gefunden wird, erstelle eine neue
+            order = Order.objects.create(customer=customer, status='----')
+        
         articles = order.orderdarticle_set.all()
     else:
         essential_accepted = is_cookie_accepted(request, 'essential')
@@ -132,6 +141,7 @@ def warenkorb(request):
     return render(request, 'shop/warenkorb.html', ctx)
 
 
+
 def kasse(request):
     # Standard-Variablen für die View
     articles = []
@@ -142,7 +152,19 @@ def kasse(request):
     # Wenn der Benutzer angemeldet ist
     if request.user.is_authenticated:
         customer = request.user.customer
-        order, created = Order.objects.get_or_create(customer=customer, done=False)
+        
+        # Hole alle offenen Bestellungen für den Kunden
+        orders = Order.objects.filter(customer=customer, done=False)
+        
+        # Wenn es keine offene Bestellung gibt, erstelle eine neue
+        if orders.count() == 0:
+            order = Order.objects.create(customer=customer, status='----')
+            order.order_id = uuid.uuid4()
+            order.save()
+        else:
+            # Wenn mehrere Bestellungen vorhanden sind, wähle eine aus oder behandle sie anders
+            order = orders.first()  # Zum Beispiel die erste Bestellung
+        
         articles = order.orderdarticle_set.all()
 
         # Versuche, die Standardadresse des Kunden zu finden
@@ -210,7 +232,16 @@ def artikelBackend(request):
     action = data['action']
     customer = request.user.customer
     article = Article.objects.get(id=articleId)
-    order, created = Order.objects.get_or_create(customer=customer, done=False)
+    
+    # Hole alle offenen Bestellungen für den Kunden
+    orders = Order.objects.filter(customer=customer, done=False)
+    if orders.count() == 0:
+        # Wenn keine offene Bestellung vorhanden ist, erstelle eine neue
+        order = Order.objects.create(customer=customer, done=False)
+    else:
+        # Wähle die erste offene Bestellung aus oder behandle die Auswahl anders
+        order = orders.first()
+    
     ordered_article, created = OrderdArticle.objects.get_or_create(order=order, article=article)
 
     if action == 'bestellen':
@@ -230,31 +261,55 @@ def artikelBackend(request):
 
 def loginSeite(request):
     page = 'login'
+    exception_notes = None  # Standardmäßig auf None setzen
+
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
+        username = request.POST.get('username', '')
+        password = request.POST.get('password', '')
 
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            
-            # Benutzerrollen prüfen
-            user_groups = user.groups.values_list('name', flat=True)
-            
-            # Sicherstellen, dass ein Customer und eine Dummy-Bestellung existieren
-            customer, created = Customer.objects.get_or_create(user=user)
-            order, order_created = Order.objects.get_or_create(customer=customer, done=False)
-            #if order_created:
-                #messages.info(request, 'Eine neue Dummy-Bestellung wurde für den Benutzer erstellt.')
-            
-            if 'Admins' in user_groups or 'Sellers' in user_groups:
-                return redirect('seller_dashboard')
+        try:
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                logging.info(f"User {username} successfully authenticated.")
+
+                user_groups = user.groups.values_list('name', flat=True)
+                customer, created = Customer.objects.get_or_create(user=user)
+
+                # Finde alle offenen Bestellungen für den Kunden
+                open_orders = Order.objects.filter(customer=customer, done=False, status='----')
+
+                if open_orders.exists():
+                    # Wähle die erste offene Bestellung oder verwende weitere Logik, um eine Bestellung auszuwählen
+                    order = open_orders.first()
+                    logging.info(f"Existing order retrieved for customer {customer.id}: {order.id}")
+                else:
+                    # Falls keine offene Bestellung existiert, eine neue Bestellung erstellen
+                    order = Order.objects.create(customer=customer, done=False)
+                    order.order_id = uuid.uuid4()
+                    order.order_date = timezone.now()
+                    order.status = '----'
+                    order.save()
+                    logging.info(f"New order created for customer {customer.id}: {order.id}")
+
+                # Sicherstellen, dass die Bestellung gespeichert wird
+                if order.pk is None:
+                    raise ValueError("Order could not be saved; primary key is None.")
+
+                if 'Admins' in user_groups or 'Sellers' in user_groups:
+                    return redirect('seller_dashboard')
+                else:
+                    return redirect('shop')
             else:
-                return redirect('shop')
-        else:
-            messages.error(request, 'Benutzername oder Passwort ungültig.')
+                messages.error(request, 'Benutzername oder Passwort ungültig.')
+                logging.warning(f"Authentication failed for username {username}.")
+        except Exception as e:
+            exception_notes = str(e)  # Wenn eine Ausnahme auftritt, speichern wir die Ausnahme
+            logging.error(f"Error during login: {exception_notes}")
 
-    return render(request, 'shop/login.html', {'page': page})
+    # Übergabe der Template-Variablen einschließlich exception_notes
+    return render(request, 'shop/login.html', {'page': page, 'exception_notes': exception_notes})
+
 
 
 
@@ -278,19 +333,17 @@ def regUser(request):
             # Erstelle oder hole den Customer für den neuen User
             customer, created = Customer.objects.get_or_create(user=user)
 
-            # Prüfe, ob eine Dummy-Order existiert, falls nicht, erstelle sie
-            order, order_created = Order.objects.get_or_create(customer=customer, done=False)
-
-            # Setze eine order_id, wenn diese nicht vorhanden ist
-            if order.order_id is None:
+            # Hole alle offenen Bestellungen für den Kunden
+            orders = Order.objects.filter(customer=customer, done=False)
+            
+            if orders.count() == 0:
+                # Wenn keine offene Bestellung vorhanden ist, erstelle eine neue
+                order = Order.objects.create(customer=customer, done=False)
                 order.order_id = uuid.uuid4()
-
-            # Speichere die Order nur, wenn sie erstellt wurde oder sich geändert hat
-            if order_created or not order.order_id:
                 order.save()
-
-            # if order_created:
-            #     messages.success(request, 'Eine neue Dummy-Bestellung wurde erstellt.')
+            else:
+                # Wähle die erste offene Bestellung aus oder behandle die Auswahl anders
+                order = orders.first()
 
             login(request, user)
             messages.success(request, f'Benutzer {user.username} wurde erfolgreich erstellt.')
@@ -447,9 +500,19 @@ def bestellen(request):
 
         if request.user.is_authenticated:
             customer = request.user.customer
-            order = Order.objects.filter(customer=customer, done=False).first()
-            if not order:
+            
+            # Stelle sicher, dass nur eine offene Bestellung vorhanden ist
+            orders = Order.objects.filter(customer=customer, done=False)
+            
+            if orders.exists():
+                order = orders.first()  # Hole die erste offene Bestellung
+            else:
                 order = Order.objects.create(customer=customer, done=False)
+                order.order_id = uuid.uuid4()
+                order.order_date = timezone.now()
+                order.status = '----'  # Status für neue Bestellungen
+                order.save()
+                logging.info(f"New initial order created for customer {customer.id}: {order.id}")
 
             address_data = {
                 'address': data['deliveryAddress']['address'],
@@ -461,7 +524,6 @@ def bestellen(request):
             address, created = Address.objects.update_or_create(
                 customer=customer, order=order, defaults=address_data
             )
-            logging.info(f"Address = {address}")
 
         else:
             customer, order = visitorOrder(request, data)
@@ -470,42 +532,27 @@ def bestellen(request):
 
         # Calculate total cart value from order model
         cart_total = order.get_cart_total()
-        logging.info(f"cart_total = {cart_total}")
-
-        # Get the tax rate based on the address
-        address = Address.objects.filter(order=order).first()  # Get the address associated with the order
-        tax_rate = TaxRate.get_tax_rate_for_country(address.country) if address else Decimal('0.00')
-        logging.info(f"tax_rate = {tax_rate}")
-
-        # Calculate the tax amount
-        tax_amount = (cart_total * tax_rate) / Decimal('100.00')
-        logging.info(f"tax_amount = {tax_amount}")
 
         # Set the order ID before saving
         order.order_id = uuid.uuid4()
         order.order_date = timezone.now()
-        order.status = 'Pending'
         
-        # Add shipping cost
-        shipping_cost = Decimal('6.50')  # Example shipping cost, could be dynamic
+        # Berechnung der Gesamtkosten
+        shipping_cost = Decimal('6.50')  # Beispiel Versandkosten
         order.shipping_cost = shipping_cost
+        total_price = cart_total + shipping_cost
         
-        # Calculate total price including tax and shipping cost
-        total_price = cart_total + shipping_cost + tax_amount
-        logging.info(f"total_price = {total_price}")
-
-        # Save the order
-        order.total = total_price
-        order.tax_amount = tax_amount
+        # Berechnung der Steuer und Gesamtkosten
+        order.calculate_total()
+        order.status = 'Pending'
         order.save()
-        logging.info(f"order_id = {order.order_id}")
 
         # PayPal form setup
         return_url = f"{os.environ.get('PAYPAL_RETURN_URL')}?order_id={order.order_id}"
         
         paypal_dict = {
             "business": os.environ.get('PAYPAL_BUSINESS'),
-            "amount": format(total_price, '.2f'),  # Gesamtpreis inkl. Versandkosten und Mehrwertsteuer
+            "amount": format(total_price, '.2f'),  # Gesamtpreis inkl. Versandkosten
             "invoice": order.order_id,
             "currency_code": os.environ.get('PAYPAL_CURRENCY'),
             "notify_url": notify_url,
@@ -524,12 +571,28 @@ def bestellen(request):
         response = HttpResponse('Bestellung erfolgreich')
         response.delete_cookie('cart')
 
+        # Erstellen einer neuen Bestellung nach der aktuellen Bestellung
+        if request.user.is_authenticated:
+            new_order = Order.objects.create(customer=request.user.customer, done=False)
+            new_order.order_id = uuid.uuid4()
+            new_order.status = '----'  # Initialstatus für die neue Bestellung
+            new_order.save()
+            logging.info(f"New initial order created for customer {request.user.customer.id}: {new_order.id}")
+        else:
+            new_customer, new_order = visitorOrder(request, data)
+            if new_customer and new_order:
+                new_order.order_id = uuid.uuid4()
+                new_order.status = '----'  # Initialstatus für die neue Bestellung
+                new_order.save()
+                logging.info(f"New initial order created for visitor: {new_order.id}")
+            else:
+                logging.error("Failed to create new order for anonymous visitor.")
+
         return response
     
     except Exception as e:
         logging.error(f"Error in bestellen view: {str(e)}")
         return HttpResponseServerError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.")
-
 
 
 
@@ -617,10 +680,12 @@ def payment_cancelled(request):
     return render(request, 'paypal/payment_cancelled.html', {"order": order})
 
 
-@login_required(login_url='login')
 def order(request, id):
     try:
         order = Order.objects.get(order_id=id)
+        # Berechne die Steuer neu, falls sie nicht aktuell ist
+        order.calculate_total()
+        order.save()
         complaint = Complaint.objects.filter(order=order).first()
     except Order.DoesNotExist:
         messages.error(request, "Bestellung nicht gefunden.")
@@ -652,6 +717,8 @@ def order(request, id):
 
 
 
+
+
 def error404(request, exception):
     return render(request, 'shop/404.html')
 
@@ -660,17 +727,24 @@ def error404(request, exception):
 @user_passes_test(is_admin_or_seller)
 def seller_dashboard(request):
     # Berechnungen und Daten für das Dashboard
-    total_customers = Customer.objects.count()
-    total_orders = Order.objects.count()
-    completed_orders = Order.objects.filter(done=True).count()
-    pending_orders = Order.objects.filter(done=False).count()
 
-    open_orders = Order.objects.filter(done=False).order_by('-order_date')
+    # Alle Bestellungen außer denen mit dem Status '----'
+    orders_excluding_pending = Order.objects.exclude(status='----')
+
+    total_customers = Customer.objects.count()
+    total_orders = orders_excluding_pending.count()
+    completed_orders = orders_excluding_pending.filter(done=True).count()
+    pending_orders = orders_excluding_pending.filter(done=False).count()
+
+    # Ausschluss von offenen Bestellungen mit Status '----'
+    open_orders = orders_excluding_pending.filter(done=False).order_by('-order_date')
+
+    # Wenn es offene Bestellungen gibt, schließe die erste aus
     if open_orders.exists():
         open_orders = open_orders.exclude(pk=open_orders.first().pk)
 
-    total_revenue = OrderdArticle.objects.aggregate(total_revenue=Sum('article__price'))['total_revenue']
-    total_items_sold = OrderdArticle.objects.aggregate(total_items_sold=Sum('quantity'))['total_items_sold']
+    total_revenue = OrderdArticle.objects.filter(order__in=orders_excluding_pending).aggregate(total_revenue=Sum('article__price'))['total_revenue']
+    total_items_sold = OrderdArticle.objects.filter(order__in=orders_excluding_pending).aggregate(total_items_sold=Sum('quantity'))['total_items_sold']
     if total_revenue is None:
         total_revenue = 0
     if total_items_sold is None:
@@ -687,14 +761,14 @@ def seller_dashboard(request):
             )
         )
     ).order_by('-total_spent')[:5]
-    
+
     orders_per_customer = Customer.objects.annotate(order_count=Count('order')).order_by('-order_count')[:5]
     popular_categories = Category.objects.annotate(total_sold=Sum('article__orderdarticle__quantity')).order_by('-total_sold')[:5]
 
     articles = Article.objects.annotate(total_sold=Sum('orderdarticle__quantity')).order_by('-total_sold')[:5]
-    orders_per_day = Order.objects.annotate(day=TruncDay('order_date')).values('day').annotate(total=Count('id')).order_by('-day')
-    orders_per_week = Order.objects.annotate(week=TruncWeek('order_date')).values('week').annotate(total=Count('id')).order_by('-week')
-    orders_per_month = Order.objects.annotate(month=TruncMonth('order_date')).values('month').annotate(total=Count('id')).order_by('-month')
+    orders_per_day = orders_excluding_pending.annotate(day=TruncDay('order_date')).values('day').annotate(total=Count('id')).order_by('-day')
+    orders_per_week = orders_excluding_pending.annotate(week=TruncWeek('order_date')).values('week').annotate(total=Count('id')).order_by('-week')
+    orders_per_month = orders_excluding_pending.annotate(month=TruncMonth('order_date')).values('month').annotate(total=Count('id')).order_by('-month')
 
     # Hinzufügen einer Variable zur Template-Context
     is_seller = request.user.groups.filter(name='Sellers').exists()
@@ -719,6 +793,8 @@ def seller_dashboard(request):
     }
 
     return render(request, 'shop/seller_dashboard.html', ctx)
+
+
 
 
 @login_required

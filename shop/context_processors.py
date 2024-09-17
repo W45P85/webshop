@@ -4,22 +4,27 @@ import json
 def cart_count(request):
     if request.user.is_authenticated:
         customer = request.user.customer
-        order, created = Order.objects.get_or_create(customer=customer, done=False)
-
-        if order:
-            quantity = order.get_cart_items
+        # Filter für offene Bestellungen
+        orders = Order.objects.filter(customer=customer, done=False)
+        
+        if orders.exists():
+            order = orders.first()  # Nimm die erste Bestellung, wenn mehrere vorhanden sind
+            quantity = order.get_cart_items  # Berechne die Menge der Artikel in dieser Bestellung
         else:
             quantity = 0
     else:
         quantity = 0
         try:
-            cart = json.loads(request.COOKIES['cart'])
-        except:
+            cart = json.loads(request.COOKIES.get('cart', '{}'))
+        except json.JSONDecodeError:
             cart = {}
+        
+        # Berechne die Menge der Artikel im Cookie-Warenkorb
         for i in cart:
-            quantity += cart[i]['quantity']
+            quantity += cart[i].get('quantity', 0)
 
     return {'quantity': quantity}
+
 
 
 def customer_profile(request):
