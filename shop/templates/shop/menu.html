@@ -20,6 +20,15 @@
                 <h5 class="text-light" style="font-size: 35px;">Willkommen {{ request.user|title }}</h5>
             </div>
             {% endif %}
+
+            {% if request.user.is_authenticated and request.user.customer %}
+                {% if not request.user.customer.is_registration_complete %}
+                    <a href="{% url 'complete_registration' %}" class="btn btn-danger">Registrierung abschließen</a>
+                {% endif %}
+            {% endif %}
+
+
+
         
             <!-- Navbar Items (visible on large screens) -->
             <div class="navbar-nav ms-auto d-flex align-items-center">

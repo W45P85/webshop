@@ -7,10 +7,9 @@ def visitorCookieHandler(request):
         cart = json.loads(request.COOKIES.get('cart', '{}'))
     except json.JSONDecodeError:
         cart = {}
-
+    
     articles = []
     order = {'get_cart_total': 0, 'get_cart_items': 0}
-    quantity = order['get_cart_items']
 
     for article_id, item_data in cart.items():
         try:
@@ -26,7 +25,7 @@ def visitorCookieHandler(request):
                     'id': article.id,
                     'name': article.name,
                     'price': article.price,
-                    'img': article.img.url if article.img else ''
+                    'img': article.img.url if article.img else ''  # Sicherstellen, dass img existiert
                 },
                 'quantity': item_quantity,
                 'get_total': cart_total
@@ -34,7 +33,8 @@ def visitorCookieHandler(request):
             articles.append(article_info)
 
         except ObjectDoesNotExist:
-            # Handle case where article with this ID does not exist
+            # Logge oder drucke die fehlenden Artikel-IDs, falls gewünscht
+            print(f"Artikel mit ID {article_id} existiert nicht.")
             pass
 
     return {'articles': articles, 'order': order}
@@ -68,8 +68,11 @@ def visitorOrder(request, data):
         # Find or create customer based on user
         customer, customer_created = Customer.objects.get_or_create(user=user)
         
-        # Create the order
-        order = Order.objects.create(customer=customer, done=False)
+        # Find or create the order with status '----'
+        order, created = Order.objects.get_or_create(customer=customer, status='----')
+        
+        if created:
+            print("Neue Bestellung erstellt:", order)
         
         # Save the address information
         address_data = {
@@ -79,22 +82,29 @@ def visitorOrder(request, data):
             'state': data['deliveryAddress']['country'],
             'country': data['deliveryAddress']['country']
         }
-        address, created = Address.objects.update_or_create(
+        address, address_created = Address.objects.update_or_create(
             customer=customer, order=order, defaults=address_data
         )
+        if not address_created:
+            print("Adresse aktualisiert:", address)
+        else:
+            print("Adresse erstellt:", address)
         
         # Save the articles
         for article_data in articles:
             article_id = article_data['article']['id']
             quantity = article_data['quantity']
             
-            article = Article.objects.get(id=article_id)
-            
-            OrderdArticle.objects.create(
-                order=order,
-                article=article,
-                quantity=quantity
-            )
+            try:
+                article = Article.objects.get(id=article_id)
+                # Aktualisieren oder Erstellen der OrderdArticle-Einträge
+                OrderdArticle.objects.update_or_create(
+                    order=order,
+                    article=article,
+                    defaults={'quantity': quantity}
+                )
+            except ObjectDoesNotExist:
+                print(f"Artikel mit ID {article_id} nicht gefunden.")
         
         return customer, order
     
@@ -102,5 +112,6 @@ def visitorOrder(request, data):
         # Handle any exceptions gracefully and log them
         print(f"Fehler bei der Verarbeitung der Bestellung: {str(e)}")
         return None, None
+
 
 

@@ -45,15 +45,23 @@ class CustomerAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('order_id', 'get_cart_total', 'customer_email', 'order_date', 'done')
-    list_filter = ('done',)
-    search_fields = ('order_id', 'customer__user__email')
+    list_display = (
+        'order_id', 'get_cart_total', 'customer_email', 'order_date', 'done', 'status', 'payment_status', 
+        'tracking_number', 'shipping_provider', 'shipping_date', 'delivery_date', 'shipping_cost', 
+        'subtotal', 'tax_amount', 'total'
+    )
+    list_filter = ('done', 'status', 'payment_status', 'shipping_provider', 'shipping_method')
+    search_fields = ('order_id', 'customer__user__email', 'tracking_number', 'shipping_provider')
     fieldsets = (
         (None, {
-            'fields': ('order_id', 'get_cart_total', 'customer', 'order_date', 'done', 'status', 'payment_status', 'tracking_number', 'shipping_provider')
+            'fields': ('order_id', 'get_cart_total', 'customer', 'order_date', 'done', 'status', 'payment_status', 
+                       'tracking_number', 'shipping_provider', 'shipping_method', 'shipping_date', 'delivery_date', 
+                       'shipping_cost', 'subtotal', 'tax_amount', 'total')
         }),
     )
-    readonly_fields = ('order_id', 'get_cart_total', 'customer', 'order_date')
+    readonly_fields = ('order_id', 'get_cart_total', 'customer', 'order_date', 'status', 'payment_status', 
+                       'tracking_number', 'shipping_provider', 'shipping_date', 'delivery_date', 'shipping_cost', 
+                       'subtotal', 'tax_amount', 'total')
 
     def customer_email(self, obj):
         return obj.customer.user.email if obj.customer and obj.customer.user else "Unknown"
@@ -62,7 +70,7 @@ class OrderAdmin(admin.ModelAdmin):
         return obj.get_cart_total()
 
     customer_email.short_description = 'Customer Email'
-    get_cart_total.short_description = 'Total'
+    get_cart_total.short_description = 'Cart Total'
 
     def changelist_view(self, request, extra_context=None):
         if request.path.endswith('pending-orders/'):
@@ -84,11 +92,19 @@ class OrderAdmin(admin.ModelAdmin):
                 order_id = form.cleaned_data['order_id']
                 tracking_number = form.cleaned_data['tracking_number']
 
-                # Suche die Bestellung und setze den Status auf "Done" und speichere die Tracking-Nummer
-                order = get_object_or_404(Order, order_id=order_id)
-                order.done = True
-                order.tracking_number = tracking_number
-                order.save()
+                try:
+                    # Suche die Bestellung und setze den Status auf "Done" und speichere die Tracking-Nummer
+                    order = Order.objects.get(order_id=order_id)
+                    order.done = True
+                    order.tracking_number = tracking_number
+                    order.save()
+
+                except Order.DoesNotExist:
+                    logger.error(f"Order with ID {order_id} does not exist.")
+                    messages.error(request, f"Order with ID {order_id} does not exist.")
+                except Exception as e:
+                    logger.error(f"Failed to update order {order_id}: {str(e)}")
+                    messages.error(request, f"Failed to update order: {str(e)}")
 
                 return HttpResponseRedirect(request.get_full_path())
         else:
@@ -100,6 +116,9 @@ class OrderAdmin(admin.ModelAdmin):
             'title': 'Pending Orders'
         }
         return render(request, 'admin/pending_orders.html', ctx)
+
+
+
 
 @admin.register(OrderdArticle)
 class OrderdArticleAdmin(admin.ModelAdmin):

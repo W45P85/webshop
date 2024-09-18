@@ -97,11 +97,38 @@ class ProfileForm(forms.ModelForm):
             'country': self.cleaned_data['country'],
             'is_default': self.cleaned_data['is_default'],
         }
-        Address.objects.update_or_create(
-            customer=customer,
-            defaults=address_data
-        )
+
+        # Hole alle Adressen des Kunden und finde die zuletzt erstellte Adresse
+        existing_addresses = Address.objects.filter(customer=customer).order_by('-date')
+        latest_address = existing_addresses.first()
+
+        if address_data['is_default']:
+            # Wenn eine neue Adresse als Standardadresse markiert wird,
+            # setze alle bisherigen Standardadressen auf nicht standard
+            Address.objects.filter(customer=customer, is_default=True).update(is_default=False)
+
+        if latest_address:
+            if latest_address.is_default:
+                # Wenn die letzte Adresse bereits die Standardadresse war, aktualisiere sie
+                for field, value in address_data.items():
+                    setattr(latest_address, field, value)
+                latest_address.save()
+            else:
+                # Wenn die letzte Adresse nicht die Standardadresse war, füge die neue Adresse hinzu
+                Address.objects.create(
+                    customer=customer,
+                    **address_data
+                )
+        else:
+            # Wenn keine Adresse vorhanden ist, füge die neue Adresse hinzu
+            Address.objects.create(
+                customer=customer,
+                **address_data
+            )
+
         return customer
+
+
 
 
 class SearchForm(forms.Form):
