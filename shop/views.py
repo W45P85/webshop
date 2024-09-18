@@ -105,40 +105,74 @@ def is_cookie_accepted(request, cookie_name):
     return cookie_name in accepted_cookies
 
 
+import logging
+
+# Logger für die Warenkorb-View initialisieren
+logger = logging.getLogger(__name__)
+
 def warenkorb(request):
+    logger.info("Warenkorb-View aufgerufen.")
+    
     order = None
     articles = []
+    cart_items = 0  # Anzahl der Artikel im Warenkorb
+    cart_total = 0  # Gesamtpreis
 
     if request.user.is_authenticated:
         customer = request.user.customer
+        logger.info(f"Benutzer {request.user.username} ist angemeldet.")
         
-        # Suche nach einer Bestellung mit dem Status '----' für den Kunden
-        open_orders = Order.objects.filter(customer=customer, status='----').first()
-        
+        # Suche nach der offenen Bestellung mit dem Status '----'
+        open_orders = Order.objects.filter(customer=customer, status='----')
         if open_orders.exists():
+            # Wähle die erste offene Bestellung, wenn mehrere vorhanden sind
             order = open_orders.first()
+            logger.info(f"Offene Bestellung gefunden: {order.id}.")
         else:
-            # Wenn keine Bestellung gefunden wird, erstelle eine neue
+            # Wenn keine offene Bestellung vorhanden ist, erstelle eine neue
             order = Order.objects.create(customer=customer, status='----')
+            logger.info(f"Neue Bestellung erstellt für Benutzer {customer.id}.")
         
+        # Hole die Artikel aus der Bestellung
         articles = order.orderdarticle_set.all()
+        if articles:
+            logger.info(f"{articles.count()} Artikel im Warenkorb gefunden.")
+        else:
+            logger.warning("Keine Artikel in der Bestellung gefunden.")
+        
+        # Berechne die Anzahl der Artikel und den Gesamtpreis
+        cart_items = sum([item.quantity for item in articles])
+        cart_total = sum([item.get_total for item in articles])
+        logger.info(f"Anzahl der Artikel im Warenkorb: {cart_items}, Gesamtpreis: {cart_total}.")
     else:
+        logger.info("Benutzer ist nicht angemeldet.")
         essential_accepted = is_cookie_accepted(request, 'essential')
 
         if essential_accepted:
+            logger.info("Essentielle Cookies wurden akzeptiert.")
+            # Hole Artikeldaten aus den Cookies für nicht angemeldete Benutzer
             cookieData = visitorCookieHandler(request)
             articles = cookieData.get('articles', [])
-            order = cookieData.get('order', None)
+            cart_items = cookieData.get('order', {}).get('get_cart_items', 0)
+            cart_total = cookieData.get('order', {}).get('get_cart_total', 0)
+            logger.info(f"Artikel aus Cookies geladen: {cart_items} Artikel, Gesamtpreis: {cart_total}.")
         else:
-            articles = []
-            order = {'get_cart_total': 0, 'get_cart_items': 0}
+            logger.warning("Essentielle Cookies wurden nicht akzeptiert, Warenkorb leer.")
 
+    # Kontext für das Template
     ctx = {
         'articles': articles,
-        'order': order,
+        'order': {
+            'get_cart_items': cart_items,
+            'get_cart_total': cart_total
+        },
     }
 
+    logger.info(f"Warenkorb-View beendet. Artikel: {cart_items}, Gesamtpreis: {cart_total}.")
+    
     return render(request, 'shop/warenkorb.html', ctx)
+
+
 
 
 
@@ -153,18 +187,18 @@ def kasse(request):
     if request.user.is_authenticated:
         customer = request.user.customer
         
-        # Hole alle offenen Bestellungen für den Kunden
-        orders = Order.objects.filter(customer=customer, done=False)
+        # Nutze die gleiche Logik wie in der Warenkorb-View, um die offene Bestellung zu holen
+        orders = Order.objects.filter(customer=customer, status='----')
         
         # Wenn es keine offene Bestellung gibt, erstelle eine neue
-        if orders.count() == 0:
+        if not orders.exists():
             order = Order.objects.create(customer=customer, status='----')
-            order.order_id = uuid.uuid4()
+            order.order_id = uuid.uuid4()  # Erstelle eine eindeutige Bestell-ID
             order.save()
         else:
-            # Wenn mehrere Bestellungen vorhanden sind, wähle eine aus oder behandle sie anders
-            order = orders.first()  # Zum Beispiel die erste Bestellung
+            order = orders.first()  # Wähle die erste offene Bestellung
         
+        # Hole die Artikel, die zu dieser Bestellung gehören
         articles = order.orderdarticle_set.all()
 
         # Versuche, die Standardadresse des Kunden zu finden
@@ -227,23 +261,33 @@ def kasse(request):
 
 
 def artikelBackend(request):
+    logger.debug("artikelBackend wurde aufgerufen")
     data = json.loads(request.body)
     articleId = data['articleId']
     action = data['action']
     customer = request.user.customer
     article = Article.objects.get(id=articleId)
     
-    # Hole alle offenen Bestellungen für den Kunden
-    orders = Order.objects.filter(customer=customer, done=False)
-    if orders.count() == 0:
-        # Wenn keine offene Bestellung vorhanden ist, erstelle eine neue
-        order = Order.objects.create(customer=customer, done=False)
+    # Hole alle offenen Bestellungen mit dem Status '----' für den Kunden
+    orders = Order.objects.filter(customer=customer, status='----')
+    if not orders.exists():
+        order = Order.objects.create(customer=customer, status='----')
     else:
-        # Wähle die erste offene Bestellung aus oder behandle die Auswahl anders
         order = orders.first()
     
+    if orders.count() == 0:
+        # Wenn keine offene Bestellung vorhanden ist, erstelle eine neue
+        order = Order.objects.create(customer=customer, status='----')
+    else:
+        # Wähle die erste offene Bestellung aus
+        order = orders.first()
+    
+    # Hole oder erstelle die OrderdArticle-Instanz
     ordered_article, created = OrderdArticle.objects.get_or_create(order=order, article=article)
-
+    
+    # Vor der Speicherung - jetzt, nachdem ordered_article existiert
+    logger.debug(f"Vor der Speicherung Order: {order}, Article: {article}, Ordered Article: {ordered_article}")
+    
     if action == 'bestellen':
         ordered_article.quantity = (ordered_article.quantity + 1)
         messages.success(request, 'Artikel wurde zum Warenkorb hinzugefügt.')
@@ -253,10 +297,14 @@ def artikelBackend(request):
 
     ordered_article.save()
 
+    # Nach der Speicherung
+    logger.debug(f"Nach der Speicherung Order: {order}, Article: {article}, Ordered Article: {ordered_article}")
+
     if ordered_article.quantity <= 0:
         ordered_article.delete()
 
-    return JsonResponse("Artikel hinzugefügt", safe=False)
+    return JsonResponse({"message": "Artikel aktualisiert", "quantity": ordered_article.quantity}, safe=False)
+
 
 
 def loginSeite(request):
@@ -333,17 +381,14 @@ def regUser(request):
             # Erstelle oder hole den Customer für den neuen User
             customer, created = Customer.objects.get_or_create(user=user)
 
-            # Hole alle offenen Bestellungen für den Kunden
-            orders = Order.objects.filter(customer=customer, done=False)
-            
-            if orders.count() == 0:
-                # Wenn keine offene Bestellung vorhanden ist, erstelle eine neue
-                order = Order.objects.create(customer=customer, done=False)
-                order.order_id = uuid.uuid4()
+            # Überprüfe, ob bereits eine Bestellung im Status '----' existiert
+            order = Order.objects.filter(customer=customer, done=False, status='----').first()
+
+            if not order:
+                # Wenn keine Bestellung mit Status '----' vorhanden ist, erstelle eine neue
+                order = Order.objects.create(customer=customer, done=False, status='----')
+                order.order_id = 'Initial-Order'
                 order.save()
-            else:
-                # Wähle die erste offene Bestellung aus oder behandle die Auswahl anders
-                order = orders.first()
 
             login(request, user)
             messages.success(request, f'Benutzer {user.username} wurde erfolgreich erstellt.')
@@ -367,6 +412,7 @@ def regUser(request):
 
     ctx = {'user_form': user_form, 'profile_form': profile_form, 'page': page}
     return render(request, 'shop/registration_form.html', ctx)
+
 
 
 
@@ -476,43 +522,38 @@ def check_and_fix_customers():
 def bestellen(request):
     try:
         logging.info("Starting bestellen view")
-        
+
         # Default URLs (Umgebungsvariablen können später genutzt werden)
         notify_url = os.environ.get('PAYPAL_NOTIFY_URL')
         cancel_return_url = os.environ.get('PAYPAL_CANCEL_RETURN_URL')
-        
+
         data = json.loads(request.body)
         logging.info(f"Received data: {data}")
 
         # Validate required fields
         required_customer_fields = ['name', 'email']
         required_address_fields = ['address', 'zip', 'city', 'country']
-        
+
         for field in required_customer_fields:
             if field not in data['customerData'] or not data['customerData'][field]:
                 logging.error(f"Missing or empty field in customerData: {field}")
                 return HttpResponseBadRequest(f"Field '{field}' is required.")
-        
+
         for field in required_address_fields:
             if field not in data['deliveryAddress'] or not data['deliveryAddress'][field]:
                 logging.error(f"Missing or empty field in deliveryAddress: {field}")
                 return HttpResponseBadRequest(f"Field '{field}' is required.")
 
+        # Authenticated user logic
         if request.user.is_authenticated:
             customer = request.user.customer
-            
-            # Stelle sicher, dass nur eine offene Bestellung vorhanden ist
-            orders = Order.objects.filter(customer=customer, done=False)
-            
-            if orders.exists():
-                order = orders.first()  # Hole die erste offene Bestellung
-            else:
-                order = Order.objects.create(customer=customer, done=False)
-                order.order_id = uuid.uuid4()
-                order.order_date = timezone.now()
-                order.status = '----'  # Status für neue Bestellungen
-                order.save()
-                logging.info(f"New initial order created for customer {customer.id}: {order.id}")
+
+            # Use the same open order as in the cart view
+            order = Order.objects.filter(customer=customer, done=False).first()
+
+            if not order:
+                logging.error("No open order found")
+                return HttpResponseBadRequest("Keine offene Bestellung gefunden.")
 
             address_data = {
                 'address': data['deliveryAddress']['address'],
@@ -524,35 +565,35 @@ def bestellen(request):
             address, created = Address.objects.update_or_create(
                 customer=customer, order=order, defaults=address_data
             )
-
         else:
+            # Anonymous customer logic
             customer, order = visitorOrder(request, data)
             if not customer or not order:
                 return HttpResponse('Fehler bei der Bestellung für anonymen Benutzer.')
 
-        # Calculate total cart value from order model
+        # Cart total calculation
         cart_total = order.get_cart_total()
 
-        # Set the order ID before saving
+        # Set order ID and date
         order.order_id = uuid.uuid4()
         order.order_date = timezone.now()
-        
-        # Berechnung der Gesamtkosten
-        shipping_cost = Decimal('6.50')  # Beispiel Versandkosten
+
+        # Shipping cost and total calculation
+        shipping_cost = Decimal('6.50')
         order.shipping_cost = shipping_cost
         total_price = cart_total + shipping_cost
-        
-        # Berechnung der Steuer und Gesamtkosten
+
+        # Tax and total calculation
         order.calculate_total()
         order.status = 'Pending'
+        order.done = True  # Mark order as completed
         order.save()
 
-        # PayPal form setup
+        # PayPal form preparation
         return_url = f"{os.environ.get('PAYPAL_RETURN_URL')}?order_id={order.order_id}"
-        
         paypal_dict = {
             "business": os.environ.get('PAYPAL_BUSINESS'),
-            "amount": format(total_price, '.2f'),  # Gesamtpreis inkl. Versandkosten
+            "amount": format(total_price, '.2f'),
             "invoice": order.order_id,
             "currency_code": os.environ.get('PAYPAL_CURRENCY'),
             "notify_url": notify_url,
@@ -571,28 +612,31 @@ def bestellen(request):
         response = HttpResponse('Bestellung erfolgreich')
         response.delete_cookie('cart')
 
-        # Erstellen einer neuen Bestellung nach der aktuellen Bestellung
+        # Create a new order after completing the previous one
         if request.user.is_authenticated:
-            new_order = Order.objects.create(customer=request.user.customer, done=False)
+            new_order = Order.objects.create(customer=customer, status='----', done=False)
             new_order.order_id = uuid.uuid4()
-            new_order.status = '----'  # Initialstatus für die neue Bestellung
             new_order.save()
-            logging.info(f"New initial order created for customer {request.user.customer.id}: {new_order.id}")
+            logging.info(f"Neue Bestellung erstellt für Kunde {customer.id}: {new_order.id}")
         else:
             new_customer, new_order = visitorOrder(request, data)
             if new_customer and new_order:
                 new_order.order_id = uuid.uuid4()
-                new_order.status = '----'  # Initialstatus für die neue Bestellung
+                new_order.status = '----'
+                new_order.done = False
                 new_order.save()
-                logging.info(f"New initial order created for visitor: {new_order.id}")
+                logging.info(f"Neue Bestellung erstellt für Besucher: {new_order.id}")
             else:
-                logging.error("Failed to create new order for anonymous visitor.")
+                logging.error("Neue Bestellung für anonymen Benutzer fehlgeschlagen.")
 
         return response
-    
+
     except Exception as e:
-        logging.error(f"Error in bestellen view: {str(e)}")
+        logging.error(f"Fehler in der bestellen-View: {str(e)}")
         return HttpResponseServerError("Ein Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.")
+
+
+
 
 
 

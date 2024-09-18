@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
+    var csrftoken = '{{ csrf_token }}';
+    
     // Initialisierung und Event-Listener für den Warenkorb
     let bestellButtons = document.getElementsByClassName('warenkorb-bestellen');
     for (let i = 0; i < bestellButtons.length; i++) {
@@ -48,32 +50,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function updateAnonymousOrder(articleId, action) {
         console.log('Update Anonymous Order:', articleId, action);
+    
+        // Initialisiere `cart`, falls es noch nicht existiert
+        if (!window.cart) {
+            window.cart = {};
+        }
+    
         if (action === 'bestellen') {
-            if (cart[articleId] === undefined) {
-                cart[articleId] = { 'quantity': 1 };
+            if (window.cart[articleId] === undefined) {
+                window.cart[articleId] = { 'quantity': 1 };
             } else {
-                cart[articleId]['quantity'] += 1;
+                window.cart[articleId]['quantity'] += 1;
             }
         }
         if (action === 'entfernen') {
-            if (cart[articleId]) {
-                cart[articleId]['quantity'] -= 1;
-
-                if (cart[articleId]['quantity'] <= 0) {
-                    delete cart[articleId];
+            if (window.cart[articleId]) {
+                window.cart[articleId]['quantity'] -= 1;
+    
+                if (window.cart[articleId]['quantity'] <= 0) {
+                    delete window.cart[articleId];
                 }
             }
         }
+    
+        let cookieString = 'cart=' + JSON.stringify(window.cart) + ";path=/";
         if (location.protocol === 'https:') {
-            document.cookie = 'cart=' + JSON.stringify(cart) + ";path=/; SameSite=None; Secure";
-        } else {
-            document.cookie = 'cart=' + JSON.stringify(cart) + ";path=/";
+            cookieString += "; SameSite=None; Secure";
         }
-        console.log('Aktualisierter Warenkorb:', cart);
+        document.cookie = cookieString;
+    
+        console.log('Aktualisierter Warenkorb:', window.cart);
         location.reload();
     }
+    
 
     function updateCustomerOrder(articleId, action) {
+        console.log('updateCustomerOrder triggered:', articleId, action);
         let url = '/artikel_backend/';
         fetch(url, {
             method: 'POST',
@@ -84,7 +96,14 @@ document.addEventListener('DOMContentLoaded', function () {
             body: JSON.stringify({ 'articleId': articleId, 'action': action })
         })
         .then(response => {
-            location.reload();
+            if (!response.ok) {
+                throw new Error('Netzwerkantwort war nicht ok');
+            }
+            return response.json(); // Oder response.text(), je nachdem, was du zurückgibst
+        })
+        .then(data => {
+            console.log('Erfolgreiche Antwort:', data);
+            location.reload(); // Oder eine andere Verarbeitung
         })
         .catch(error => console.error('Fehler beim UpdateCustomerOrder:', error));
     }

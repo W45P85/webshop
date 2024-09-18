@@ -231,7 +231,7 @@ class Order(models.Model):
 
             # Nur bei einer neuen Bestellung den Status setzen
             if self.pk is None:
-                self.status = 'Pending'
+                self.status = '----'
 
             # Speichern der Instanz mit den aktualisierten Feldern
             super().save(*args, **kwargs)

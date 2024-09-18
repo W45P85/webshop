@@ -5,7 +5,7 @@ def cart_count(request):
     if request.user.is_authenticated:
         customer = request.user.customer
         # Filter für offene Bestellungen
-        orders = Order.objects.filter(customer=customer, done=False)
+        orders = Order.objects.filter(customer=customer, status='----')
         
         if orders.exists():
             order = orders.first()  # Nimm die erste Bestellung, wenn mehrere vorhanden sind
