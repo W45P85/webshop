@@ -258,8 +258,7 @@ def kasse(request):
     return render(request, 'shop/kasse.html', ctx)
 
 
-
-
+@csrf_exempt
 def artikelBackend(request):
     logger.debug("artikelBackend wurde aufgerufen")
     data = json.loads(request.body)
@@ -519,6 +518,7 @@ def check_and_fix_customers():
             print(f"Customer {customer.id} hat keine zugeordnete User-Instanz.")
 
 
+@csrf_exempt
 def bestellen(request):
     try:
         logging.info("Starting bestellen view")
